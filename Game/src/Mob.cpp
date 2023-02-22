@@ -77,15 +77,17 @@ bool Mob::isHidden() const
     // As a placeholder, just mark Rogues as always hidden.
     if (getStats().getMobType() == iEntityStats::MobType::Rogue)
     {
-        for (Entity* entity : gameEntities)
+        for (Entity* entity : southPlayer.getBuildings())
         {
-            Vec2 direction = m_Pos - entity->getPosition();
+            Vec2 direction = entity->getPosition() - m_Pos;
             float distance = direction.length();
 
-            if (m_bNorth != entity->isNorth() && !entity->isDead() && entity->getStats().getSightRadius() <= distance)
+
+            if (m_bNorth != entity->isNorth() && !entity->isDead() && entity->getStats().getSightRadius() >= distance)
             {
                 return false;
             }
+
         }
         return true;
     }
