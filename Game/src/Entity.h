@@ -44,7 +44,7 @@ public:
     void takeDamage(int dmg) { m_Health -= dmg; }
 
     virtual const Vec2& getPosition() const { return m_Pos; }
-
+    virtual const int getId() const { return id; }
     // Hidden entities will appear faded if they belong to the South player, and will
     // not be rendered at all if they belong to the North player.
     virtual bool isHidden() const { return false; }
@@ -60,6 +60,7 @@ protected:
     bool m_bNorth;
     int m_Health;
     Vec2 m_Pos;
+    int id;
 
     // Our target will be the closest target (may change every tick) until
     //  we attack it.  Once we attack a target, we stay locked on it until

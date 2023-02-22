@@ -25,6 +25,7 @@
 #include "Constants.h"
 #include "Game.h"
 
+
 #include <algorithm>
 #include <vector>
 
@@ -48,6 +49,7 @@ void Mob::tick(float deltaTSec)
     }
 }
 
+
 bool Mob::isHidden() const
 {
     // Project 2: This is where you should put the logic for checking if a Rogue is
@@ -59,12 +61,36 @@ bool Mob::isHidden() const
     // to change the way the character renders (Rogues on the South team will render
     // as grayed our when hidden, ones on the North team won't render at all).
 
-    // TODO: This special case code for the Rogue doesn't belong in the Mob class - we
-    // need some way to encapsulate and decouple.  I'm thinking maybe a lambda in the
-    // EntityStats??
+    Player& northPlayer = Game::get().getPlayer(true);
+    Player& southPlayer = Game::get().getPlayer(false);
+
+    std::vector<Entity*> gameEntities;
+
+    // Get all the mobs and buildings of each player, and insert them into the Entities Vector
+    gameEntities.insert(gameEntities.end(), northPlayer.getMobs().begin(), northPlayer.getMobs().end());
+    gameEntities.insert(gameEntities.end(), southPlayer.getMobs().begin(), southPlayer.getMobs().end());
+    gameEntities.insert(gameEntities.end(), northPlayer.getBuildings().begin(), northPlayer.getBuildings().end());
+    gameEntities.insert(gameEntities.end(), southPlayer.getBuildings().begin(), southPlayer.getBuildings().end());
+
+
 
     // As a placeholder, just mark Rogues as always hidden.
-    return getStats().getMobType() == iEntityStats::MobType::Rogue;
+    if (getStats().getMobType() == iEntityStats::MobType::Rogue)
+    {
+        for (Entity* entity : gameEntities)
+        {
+            Vec2 direction = m_Pos - entity->getPosition();
+            float distance = direction.length();
+
+            if (m_bNorth != entity->isNorth() && !entity->isDead() && entity->getStats().getSightRadius() <= distance)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    return false;
 }
 
 void Mob::move(float deltaTSec)

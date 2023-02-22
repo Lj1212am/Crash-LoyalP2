@@ -23,6 +23,7 @@
 #pragma once
 
 #include "Entity.h"
+#include "Player.h"
 
 struct Waypoint;
 
@@ -40,6 +41,7 @@ protected:
     const Vec2* pickWaypoint();
     Mob* checkCollision();
     void processCollision(Mob* otherMob, float deltaTSec);
+
 
 private:
     const Vec2* m_pWaypoint;

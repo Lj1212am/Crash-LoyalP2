@@ -36,6 +36,8 @@ Entity::Entity(const iEntityStats& stats, const Vec2& pos, bool isNorth)
     , m_bTargetLock(NULL)
     , m_TimeSinceAttack(0.f)
 {
+    static int s_NextID = 0;
+    id = s_NextID++;
 }
 
 void Entity::tick(float deltaTSec)
