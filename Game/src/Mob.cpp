@@ -134,7 +134,7 @@ bool Mob::isObstructedByGiantOrTower(Entity* e, Player& friendlyPlayer) const
     {
         if(lineSquareIntersection(e->getPosition(), entity->getStats().getSize(), entity->getPosition()) && !entity->isDead())
         {
-            printf("is obstructed by building %s \n", entity->getStats().getName());
+            //printf("is obstructed by building %s \n", entity->getStats().getName());
             return true;
         }
     }
@@ -144,7 +144,7 @@ bool Mob::isObstructedByGiantOrTower(Entity* e, Player& friendlyPlayer) const
         {
             if(lineSquareIntersection(e->getPosition(), entity->getStats().getSize(), entity->getPosition()) && !entity->isDead())
             {
-                printf("is obstructed by giant %s \n", entity->getStats().getName());
+                //printf("is obstructed by giant %s \n", entity->getStats().getName());
                 return true;
             }
         }
@@ -208,62 +208,7 @@ bool Mob::isHidden() const
     
 }
 
-void Mob::rogueMove()
-{
-    // we only attack things that are within our sight radius
-    float closestDist = getStats().getSightRadius();
-    float closestDistSq = closestDist * closestDist;
 
-    Player& opposingPlayer = Game::get().getPlayer(!m_bNorth);
-    Player& friendlyPlayer = Game::get().getPlayer(m_bNorth);
-
-    //if (!isHidden())
-    //{
-        assert(!m_bTargetLock || !!m_pTarget);
-        if (m_bTargetLock && !m_pTarget->isDead())
-        {
-            return;
-        }
-
-        m_pTarget = NULL;
-        m_bTargetLock = false;
-
-        for (Entity* pEntity : opposingPlayer.getMobs())
-        {
-            assert(pEntity->isNorth() != isNorth());
-            if (!pEntity->isDead())
-            {
-                float distSq = m_Pos.distSqr(pEntity->getPosition());
-                if (distSq < closestDistSq)
-                {
-                    closestDistSq = distSq;
-                    m_pTarget = pEntity;
-                }
-
-            }
-        }
-        if (m_pTarget = NULL)
-        {
-            for (Entity* pEntity : friendlyPlayer.getMobs())
-            {
-                assert(pEntity->isNorth() == isNorth());
-                if (!pEntity->isDead())
-                {
-                    if (pEntity->getStats().getMobType() == iEntityStats::MobType::Giant)
-                    {
-                        float distSq = m_Pos.distSqr(pEntity->getPosition());
-                        if (distSq < closestDistSq)
-                        {
-                            closestDistSq = distSq;
-                            m_pTarget = pEntity;
-                        }
-                    }
-                }
-            }
-        }
-    
-
-}
 
 void Mob::move(float deltaTSec)
 {
@@ -281,6 +226,7 @@ void Mob::move(float deltaTSec)
     Vec2 destPos;
     Player& friendlyPlayer = Game::get().getPlayer(m_bNorth);
     bool bMoveToTarget = false;
+    bool hasTarget = false;
 
     float closestDist = getStats().getSightRadius();
     float closestDistSq = closestDist * closestDist;
@@ -295,15 +241,17 @@ void Mob::move(float deltaTSec)
             bMoveToTarget = true;
         }
     }
-
+    
         
     if (bMoveToTarget)
     {
         m_pWaypoint = NULL;
         destPos = m_pTarget->getPosition();
+        hasTarget = true;
     }
     else if (getStats().getMobType() == iEntityStats::MobType::Rogue)
     {
+        
         for (Entity* pEntity : friendlyPlayer.getMobs())
         {
             assert(pEntity->isNorth() == isNorth());
@@ -316,7 +264,9 @@ void Mob::move(float deltaTSec)
                     {
                         closestDistSq = distSq;
                         destPos = pEntity->getPosition();
-
+                        m_pTarget = pEntity;
+                        hasTarget = true;
+                        m_pWaypoint = NULL;
                         if (m_bNorth)
                         {
                             destPos.y -= (pEntity->getStats().getSize() / 2.f) + 0.5f;
@@ -330,17 +280,31 @@ void Mob::move(float deltaTSec)
             }
         }
         
-    }
-    
-    if(!bMoveToTarget)
+    } 
+    if (!hasTarget)
     {
         if (!m_pWaypoint)
         {
             m_pWaypoint = pickWaypoint();
         }
         destPos = m_pWaypoint ? *m_pWaypoint : m_Pos;
+
+
     }
+
     
+ 
+
+    
+    //if(!foundGiant)
+    //{
+    //    if (!m_pWaypoint)
+    //    {
+    //        m_pWaypoint = pickWaypoint();
+    //    }
+    //    destPos = m_pWaypoint ? *m_pWaypoint : m_Pos;
+    //}
+    //
 
     // Actually do the moving
     Vec2 moveVec = destPos - m_Pos;
@@ -381,6 +345,47 @@ void Mob::move(float deltaTSec)
     }
 }
 
+const Vec2* Mob::pickRogueWaypoint()
+{
+    float smallestDistSq = FLT_MAX;
+    const Vec2* pClosest = NULL;
+
+    for (const Vec2& pt : Game::get().getWaypoints())
+    {
+        
+        if (m_bNorth)
+        {
+            if (pt.y < 5.f)
+            {
+                float distSq = m_Pos.distSqr(pt);
+                if (distSq < smallestDistSq) {
+                    smallestDistSq = distSq;
+                    pClosest = &pt;
+                }
+            }
+                
+            //destPos.y -= (pEntity->getStats().getSize() / 2.f) + 0.5f;
+        }
+        else
+        {
+            if (pt.y > 25.5f)
+            {
+                //printf("waypoints x: %f, y: %f\n", pt.x, pt.y);
+
+
+                float distSq = m_Pos.distSqr(pt);
+                if (distSq < smallestDistSq) {
+                    smallestDistSq = distSq;
+                    pClosest = &pt;
+                }
+            }
+
+               
+        }
+       }
+        return pClosest;
+}
+
 const Vec2* Mob::pickWaypoint()
 {
     // Project 2:  You may need to make some adjustments here, so that Rogues will go
@@ -394,20 +399,34 @@ const Vec2* Mob::pickWaypoint()
 
     for (const Vec2& pt : Game::get().getWaypoints())
     {
-        // Filter out any waypoints that are behind (or barely in front of) us.
-        // NOTE: (0, 0) is the top left corner of the screen
-        float yOffset = pt.y - m_Pos.y;
-        if ((m_bNorth && (yOffset < 1.f)) ||
-            (!m_bNorth && (yOffset > -1.f)))
+        if (getStats().getMobType() == iEntityStats::MobType::Rogue)
         {
-            continue;
+            pClosest = pickRogueWaypoint();
+        }
+        else
+        {
+            // Filter out any waypoints that are behind (or barely in front of) us.
+            // NOTE: (0, 0) is the top left corner of the screen
+            // TODO: Giant Waypoint Bug that came with the code
+            float yOffset = pt.y - m_Pos.y;
+            if ((m_bNorth && (yOffset < 1.f)) ||
+                (!m_bNorth && (yOffset > -1.f)) ||
+                (pt.y > 25.5f) ||
+                (pt.y < 5.f))
+            {
+                continue;
+            }
+
+            float distSq = m_Pos.distSqr(pt);
+            if (distSq < smallestDistSq) {
+                smallestDistSq = distSq;
+                pClosest = &pt;
+            }
         }
 
-        float distSq = m_Pos.distSqr(pt);
-        if (distSq < smallestDistSq) {
-            smallestDistSq = distSq;
-            pClosest = &pt;
-        }
+
+
+
     }
 
 

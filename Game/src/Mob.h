@@ -44,7 +44,7 @@ protected:
     bool isHiding() const;
     bool isObstructedByGiantOrTower(Entity* e, Player& friendlyPlayer) const;
     bool lineSquareIntersection(Vec2 start, float size, Vec2 obj_pos) const;
-    void rogueMove();
+    const Vec2* pickRogueWaypoint();
 
 
 private:
