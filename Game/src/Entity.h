@@ -44,6 +44,7 @@ public:
     void takeDamage(int dmg) { m_Health -= dmg; }
 
     virtual const Vec2& getPosition() const { return m_Pos; }
+    virtual const Entity* getTarget() const { return m_pTarget; }
     virtual const int getId() const { return id; }
     // Hidden entities will appear faded if they belong to the South player, and will
     // not be rendered at all if they belong to the North player.

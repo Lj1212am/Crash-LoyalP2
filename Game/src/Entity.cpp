@@ -84,6 +84,7 @@ void Entity::pickTarget()
     Player& opposingPlayer = Game::get().getPlayer(!m_bNorth);
 
 
+
     if (m_Stats.getTargetType() != iEntityStats::Mob)
     {
         for (Entity* pEntity : opposingPlayer.getBuildings())
@@ -114,9 +115,13 @@ void Entity::pickTarget()
                     closestDistSq = distSq;
                     m_pTarget = pEntity;
                 }
+                
             }
         }
     }
+
+        
+    
 }
 
 bool Entity::targetInRange()

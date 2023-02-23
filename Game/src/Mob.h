@@ -41,10 +41,13 @@ protected:
     const Vec2* pickWaypoint();
     Mob* checkCollision();
     void processCollision(Mob* otherMob, float deltaTSec);
+    bool isHiding() const;
     bool isObstructedByGiantOrTower(Entity* e, Player& friendlyPlayer) const;
     bool lineSquareIntersection(Vec2 start, float size, Vec2 obj_pos) const;
+    void rogueMove();
 
 
 private:
     const Vec2* m_pWaypoint;
+    int m_ticksSinceHidden = 0;
 };

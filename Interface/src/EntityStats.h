@@ -85,6 +85,7 @@ public:
     virtual TargetType getTargetType() const = 0;
     virtual float getAttackRange() const = 0;
     virtual DamageType getDamageType() const = 0;
+    virtual TargetType getType() const = 0;
     virtual int getDamage() const = 0;
     virtual float getAttackTime() const = 0;
     virtual float getSightRadius() const = 0;

@@ -39,6 +39,15 @@ Mob::Mob(const iEntityStats& stats, const Vec2& pos, bool isNorth)
 
 void Mob::tick(float deltaTSec)
 {
+    if (isHiding())
+    {
+        m_ticksSinceHidden++;
+    }
+    else 
+    {
+        m_ticksSinceHidden = 0;
+    }
+
     // Tick the entity first.  This will pick our target, and attack it if it's in range.
     Entity::tick(deltaTSec);
 
@@ -144,17 +153,9 @@ bool Mob::isObstructedByGiantOrTower(Entity* e, Player& friendlyPlayer) const
     return false;
 }
 
-bool Mob::isHidden() const
-{
-    // Project 2: This is where you should put the logic for checking if a Rogue is
-    // hidden or not.  It probably involves something related to calling Game::Get()
-    // to get the Game, then calling getPlayer() on the game to get each player, then
-    // going through all the entities on the players and... well, you can take it 
-    // from there.  Once you've implemented this function, you can use it elsewhere to
-    // change the Rogue's behavior, damage, etc.  It is also used in by the Graphics
-    // to change the way the character renders (Rogues on the South team will render
-    // as grayed our when hidden, ones on the North team won't render at all).
 
+bool Mob::isHiding() const
+{
     Player& northPlayer = Game::get().getPlayer(true);
     Player& southPlayer = Game::get().getPlayer(false);
 
@@ -178,11 +179,11 @@ bool Mob::isHidden() const
 
             if (m_bNorth != entity->isNorth() && !entity->isDead() && entity->getStats().getSightRadius() >= distance)
             {
-                if (!isObstructedByGiantOrTower(entity, Game::get().getPlayer(m_bNorth))) 
+                if (!isObstructedByGiantOrTower(entity, Game::get().getPlayer(m_bNorth)))
                 {
                     return false;
                 }
-              
+
             }
 
         }
@@ -190,6 +191,78 @@ bool Mob::isHidden() const
     }
 
     return false;
+}
+
+bool Mob::isHidden() const
+{
+    return isHiding() && m_ticksSinceHidden >= 2.f / 0.05f;
+    // Project 2: This is where you should put the logic for checking if a Rogue is
+    // hidden or not.  It probably involves something related to calling Game::Get()
+    // to get the Game, then calling getPlayer() on the game to get each player, then
+    // going through all the entities on the players and... well, you can take it 
+    // from there.  Once you've implemented this function, you can use it elsewhere to
+    // change the Rogue's behavior, damage, etc.  It is also used in by the Graphics
+    // to change the way the character renders (Rogues on the South team will render
+    // as grayed our when hidden, ones on the North team won't render at all).
+
+    
+}
+
+void Mob::rogueMove()
+{
+    // we only attack things that are within our sight radius
+    float closestDist = getStats().getSightRadius();
+    float closestDistSq = closestDist * closestDist;
+
+    Player& opposingPlayer = Game::get().getPlayer(!m_bNorth);
+    Player& friendlyPlayer = Game::get().getPlayer(m_bNorth);
+
+    //if (!isHidden())
+    //{
+        assert(!m_bTargetLock || !!m_pTarget);
+        if (m_bTargetLock && !m_pTarget->isDead())
+        {
+            return;
+        }
+
+        m_pTarget = NULL;
+        m_bTargetLock = false;
+
+        for (Entity* pEntity : opposingPlayer.getMobs())
+        {
+            assert(pEntity->isNorth() != isNorth());
+            if (!pEntity->isDead())
+            {
+                float distSq = m_Pos.distSqr(pEntity->getPosition());
+                if (distSq < closestDistSq)
+                {
+                    closestDistSq = distSq;
+                    m_pTarget = pEntity;
+                }
+
+            }
+        }
+        if (m_pTarget = NULL)
+        {
+            for (Entity* pEntity : friendlyPlayer.getMobs())
+            {
+                assert(pEntity->isNorth() == isNorth());
+                if (!pEntity->isDead())
+                {
+                    if (pEntity->getStats().getMobType() == iEntityStats::MobType::Giant)
+                    {
+                        float distSq = m_Pos.distSqr(pEntity->getPosition());
+                        if (distSq < closestDistSq)
+                        {
+                            closestDistSq = distSq;
+                            m_pTarget = pEntity;
+                        }
+                    }
+                }
+            }
+        }
+    
+
 }
 
 void Mob::move(float deltaTSec)
@@ -205,9 +278,15 @@ void Mob::move(float deltaTSec)
 
     // If we have a target and it's on the same side of the river, we move towards it.
     //  Otherwise, we move toward the bridge.
+    Vec2 destPos;
+    Player& friendlyPlayer = Game::get().getPlayer(m_bNorth);
     bool bMoveToTarget = false;
+
+    float closestDist = getStats().getSightRadius();
+    float closestDistSq = closestDist * closestDist;
+        
     if (!!m_pTarget)
-    {    
+    {
         bool imTop = m_Pos.y < (GAME_GRID_HEIGHT / 2);
         bool otherTop = m_pTarget->getPosition().y < (GAME_GRID_HEIGHT / 2);
 
@@ -217,11 +296,40 @@ void Mob::move(float deltaTSec)
         }
     }
 
-    Vec2 destPos;
+        
     if (bMoveToTarget)
-    { 
+    {
         m_pWaypoint = NULL;
         destPos = m_pTarget->getPosition();
+    }
+    else if (getStats().getMobType() == iEntityStats::MobType::Rogue)
+    {
+        for (Entity* pEntity : friendlyPlayer.getMobs())
+        {
+            assert(pEntity->isNorth() == isNorth());
+            if (!pEntity->isDead())
+            {
+                if (pEntity->getStats().getMobType() == iEntityStats::MobType::Giant)
+                {
+                    float distSq = m_Pos.distSqr(pEntity->getPosition());
+                    if (distSq < closestDistSq)
+                    {
+                        closestDistSq = distSq;
+                        destPos = pEntity->getPosition();
+
+                        if (m_bNorth)
+                        {
+                            destPos.y -= (pEntity->getStats().getSize() / 2.f) + 0.5f;
+                        }
+                        else
+                        {
+                            destPos.y += (pEntity->getStats().getSize() / 2.f) + 0.5f;
+                        }
+                    }
+                }
+            }
+        }
+        
     }
     else
     {
@@ -231,6 +339,7 @@ void Mob::move(float deltaTSec)
         }
         destPos = m_pWaypoint ? *m_pWaypoint : m_Pos;
     }
+    
 
     // Actually do the moving
     Vec2 moveVec = destPos - m_Pos;
