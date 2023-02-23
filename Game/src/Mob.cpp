@@ -316,6 +316,39 @@ void Mob::move(float deltaTSec)
                     }
                 }
             }
+            if (!hasTarget)
+            {
+                for (Entity* pEntity : friendlyPlayer.getBuildings())
+                {
+                    assert(pEntity->isNorth() == isNorth());
+                    if (!pEntity->isDead())
+                    {
+                        if (pEntity->getStats().getType() == iEntityStats::Building)
+                        {
+                            printf("arrived to friendly building \n");
+                            float distSq = m_Pos.distSqr(pEntity->getPosition());
+                            if (distSq < closestDistSq)
+                            {
+                                closestDistSq = distSq;
+                                destPos = pEntity->getPosition();
+                                m_pTarget = pEntity;
+                                m_eFriendlyBuilding = pEntity;
+                                hasTarget = true;
+                                m_pWaypoint = NULL;
+                                m_bFollowingBuilding = true;
+                                if (m_bNorth)
+                                {
+                                    destPos.y -= (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
+                                }
+                                else
+                                {
+                                    destPos.y += (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
         }
         if (!hasTarget)
@@ -353,6 +386,18 @@ void Mob::move(float deltaTSec)
                 destPos.y += (m_eFriendlyGiant->getStats().getSize() / 2.f) + getStats().getHideDistance();
             }
 
+        }
+        else if (m_bFollowingBuilding)
+        {
+            destPos = m_eFriendlyBuilding->getPosition();
+            if (m_bNorth)
+            {
+                destPos.y -= (m_eFriendlyBuilding->getStats().getSize() / 2.f) + getStats().getHideDistance();
+            }
+            else
+            {
+                destPos.y += (m_eFriendlyBuilding->getStats().getSize() / 2.f) + getStats().getHideDistance();
+            }
         }
         
 
@@ -463,11 +508,11 @@ const Vec2* Mob::pickWaypoint()
 
     for (const Vec2& pt : Game::get().getWaypoints())
     {
-        if (getStats().getMobType() == iEntityStats::MobType::Rogue)
+        /*if (getStats().getMobType() == iEntityStats::MobType::Rogue)
         {
             pClosest = pickRogueWaypoint();
         }
-        else
+        else*/
         {
             // Filter out any waypoints that are behind (or barely in front of) us.
             // NOTE: (0, 0) is the top left corner of the screen

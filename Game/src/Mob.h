@@ -54,6 +54,8 @@ private:
     int m_ticksSinceHidden = 0;
     bool m_bFollowingGiant = false;
     Entity* m_eFriendlyGiant;
+    bool m_bFollowingBuilding = false;
+    Entity* m_eFriendlyBuilding;
 
     
 };
