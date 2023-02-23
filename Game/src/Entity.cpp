@@ -95,6 +95,7 @@ void Entity::pickTarget()
                 float distSq = m_Pos.distSqr(pEntity->getPosition());
                 if (distSq < closestDistSq)
                 {
+                    
                     closestDistSq = distSq;
                     m_pTarget = pEntity;
                 }

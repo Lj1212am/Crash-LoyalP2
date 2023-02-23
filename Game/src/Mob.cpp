@@ -134,7 +134,7 @@ bool Mob::isObstructedByGiantOrTower(Entity* e, Player& friendlyPlayer) const
     {
         if(lineSquareIntersection(e->getPosition(), entity->getStats().getSize(), entity->getPosition()) && !entity->isDead())
         {
-            printf("is obstructed by building %s \n", entity->getStats().getName());
+            //printf("is obstructed by building %s \n", entity->getStats().getName());
             return true;
         }
     }
@@ -144,7 +144,7 @@ bool Mob::isObstructedByGiantOrTower(Entity* e, Player& friendlyPlayer) const
         {
             if(lineSquareIntersection(e->getPosition(), entity->getStats().getSize(), entity->getPosition()) && !entity->isDead())
             {
-                printf("is obstructed by giant %s \n", entity->getStats().getName());
+                //printf("is obstructed by giant %s \n", entity->getStats().getName());
                 return true;
             }
         }
@@ -304,6 +304,10 @@ void Mob::move(float deltaTSec)
     }
     else if (getStats().getMobType() == iEntityStats::MobType::Rogue)
     {
+        bool foundGiant = false;
+        float closestDist = getStats().getSightRadius();
+        float closestDistSq = closestDist * closestDist;
+
         for (Entity* pEntity : friendlyPlayer.getMobs())
         {
             assert(pEntity->isNorth() == isNorth());
@@ -312,10 +316,13 @@ void Mob::move(float deltaTSec)
                 if (pEntity->getStats().getMobType() == iEntityStats::MobType::Giant)
                 {
                     float distSq = m_Pos.distSqr(pEntity->getPosition());
+                    
                     if (distSq < closestDistSq)
                     {
+                        
                         closestDistSq = distSq;
                         destPos = pEntity->getPosition();
+                        foundGiant = true;
 
                         if (m_bNorth)
                         {
@@ -323,11 +330,21 @@ void Mob::move(float deltaTSec)
                         }
                         else
                         {
+                            printf("distSqr: %f, SightSqrd %f\n", distSq, closestDistSq);
                             destPos.y += (pEntity->getStats().getSize() / 2.f) + 0.5f;
                         }
                     }
                 }
             }
+        }
+
+        if (!foundGiant)
+        {
+            if (!m_pWaypoint)
+            {
+                m_pWaypoint = pickWaypoint();
+            }
+            destPos = m_pWaypoint ? *m_pWaypoint : m_Pos;
         }
         
     }
@@ -391,22 +408,57 @@ const Vec2* Mob::pickWaypoint()
     float smallestDistSq = FLT_MAX;
     const Vec2* pClosest = NULL;
 
-    for (const Vec2& pt : Game::get().getWaypoints())
+    if (getStats().getMobType() == iEntityStats::MobType::Rogue && !isHidden())
     {
-        // Filter out any waypoints that are behind (or barely in front of) us.
-        // NOTE: (0, 0) is the top left corner of the screen
-        float yOffset = pt.y - m_Pos.y;
-        if ((m_bNorth && (yOffset < 1.f)) ||
-            (!m_bNorth && (yOffset > -1.f)))
-        {
-            continue;
-        }
+        const float princessSize = iEntityStats::getBuildingStats(iEntityStats::Princess).getSize();
+        const float kingSize = iEntityStats::getBuildingStats(iEntityStats::King).getSize();
 
-        float distSq = m_Pos.distSqr(pt);
-        if (distSq < smallestDistSq) {
-            smallestDistSq = distSq;
-            pClosest = &pt;
+        const Vec2 northLeftPrincess(PrincessLeftX + (princessSize / 2.f) + 1.f, NorthPrincessY);
+        const Vec2 northRightPrincess(PrincessRightX + (princessSize / 2.f) + 1.f, NorthPrincessY);
+        const Vec2 northKing(KingX + (kingSize / 2.f) + 1.f, NorthKingY);
+
+        const Vec2 southLeftPrincess(PrincessLeftX + (princessSize / 2.f) + 1.f, SouthPrincessY);
+        const Vec2 southRightPrincess(PrincessRightX + (princessSize / 2.f) + 1.f, SouthPrincessY);
+        const Vec2 southKing(KingX + (kingSize / 2.f) + 1.f, SouthKingY);
+
+        if (m_bNorth)
+        {
+            pClosest = &northKing;
         }
+        else
+        {
+
+            printf("Deciding upon waypoint for South rogue\n");
+            pClosest = &southKing;
+        }
+    }
+    else
+    {
+        for (const Vec2& pt : Game::get().getWaypoints())
+        {
+            // Filter out any waypoints that are behind (or barely in front of) us.
+            // NOTE: (0, 0) is the top left corner of the screen
+
+
+            float yOffset = pt.y - m_Pos.y;
+            if ((m_bNorth && (yOffset < 1.f)) ||
+                (!m_bNorth && (yOffset > -1.f)))
+            {
+                continue;
+            }
+
+            float distSq = m_Pos.distSqr(pt);
+            if (distSq < smallestDistSq) {
+                smallestDistSq = distSq;
+                pClosest = &pt;
+            }
+
+    }
+    
+    
+
+
+
     }
 
 
