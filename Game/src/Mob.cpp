@@ -75,7 +75,6 @@ bool lineLineIntersect(Vec2 p1, Vec2 p2, Vec2 q1, Vec2 q2, Vec2& intersection)
 
 bool Mob::lineSquareIntersection(Vec2 start, float size, Vec2 obj_pos) const
 {
-    Vec2 direction = start - m_Pos;
     Vec2 topLeft = Vec2(obj_pos.x - (size / 2.0f), obj_pos.y - (size / 2.0f));
     Vec2 topRight = Vec2(obj_pos.x + (size / 2.0f), obj_pos.y - (size / 2.0f));
     Vec2 bottomLeft = Vec2(obj_pos.x - (size / 2.0f), obj_pos.y + (size / 2.0f));
@@ -117,57 +116,10 @@ bool Mob::lineSquareIntersection(Vec2 start, float size, Vec2 obj_pos) const
 
 
 
-
-
-
-
-//    Vec2 t_near;
-//    Vec2 t_far;
-//    t_near.x = (top_left.x - start.x) / direction.x;
-//    t_near.y = (top_left.y - start.y) / direction.y;
-//    t_far.x = (top_left.x + size - start.x) / direction.x;
-//    t_far.y = (top_left.y + size - start.y) / direction.y;
-//    
-//    //if (t_near.x > t_far.x)
-//    //{
-//    //    float tmp_x = t_near.x;
-//    //    t_near.x = t_far.x;
-//    //    t_far.x = tmp_x;
-//    //}
-//    //if (t_near.y > t_far.y)
-//    //{
-//    //    float tmp_y = t_near.y;
-//    //    t_near.y = t_far.y;
-//    //    t_far.y = tmp_y;
-//    //}
-//    if (t_near.x > t_far.x) std::swap(t_near.x, t_far.x);
-//    if (t_near.y > t_far.y) std::swap(t_near.y, t_far.y);
-//
-//    if (t_near.x > t_far.y || t_near.y > t_far.x)
-//    {
-//        return false;
-//    }
-//
-//    float t_hit_near = std::max(t_near.x, t_near.y);
-//    float t_hit_far = std::min(t_far.x, t_far.y);
-//
-//    if (t_hit_far < 0)
-//    {
-//        return false;
-//    }
-//
-//    return true;
-//
-//}
-
 bool Mob::isObstructedByGiantOrTower(Entity* e, Player& friendlyPlayer) const
 {
     Vec2 direction = e->getPosition() - m_Pos;
     float distance = direction.length();
-
-    std::vector<Entity*> playerEntities;
-    playerEntities.insert(playerEntities.end(), friendlyPlayer.getMobs().begin(), friendlyPlayer.getMobs().end());
-    playerEntities.insert(playerEntities.end(), friendlyPlayer.getBuildings().begin(), friendlyPlayer.getBuildings().end());
 
     for (Entity* entity : friendlyPlayer.getBuildings())
     {
@@ -189,7 +141,6 @@ bool Mob::isObstructedByGiantOrTower(Entity* e, Player& friendlyPlayer) const
         }
     }
 
-    //printf("seen by %s \n", e->getStats().getName());
     return false;
 }
 
@@ -217,7 +168,6 @@ bool Mob::isHidden() const
 
 
 
-    // As a placeholder, just mark Rogues as always hidden.
     if (getStats().getMobType() == iEntityStats::MobType::Rogue)
     {
         for (Entity* entity : gameEntities)
@@ -228,8 +178,10 @@ bool Mob::isHidden() const
 
             if (m_bNorth != entity->isNorth() && !entity->isDead() && entity->getStats().getSightRadius() >= distance)
             {
-                //printf("is obstructed: %d\n", isObstructedByGiantOrTower(entity, Game::get().getPlayer(m_bNorth)));
-                return isObstructedByGiantOrTower(entity, Game::get().getPlayer(m_bNorth));
+                if (!isObstructedByGiantOrTower(entity, Game::get().getPlayer(m_bNorth))) 
+                {
+                    return false;
+                }
               
             }
 
@@ -250,9 +202,6 @@ void Mob::move(float deltaTSec)
     // types of units are added.  We only have the one special unit type, so we can 
     // afford to be a lazy in this instance... but if this were production code, I 
     // would never do it this way!!
-    //   TODO: Build a better system for encapsulating unit-specific logic, perhaps
-    // by repurposing and expanding the EntityStats subclasses (which need some love
-    // as well!)
 
     // If we have a target and it's on the same side of the river, we move towards it.
     //  Otherwise, we move toward the bridge.
