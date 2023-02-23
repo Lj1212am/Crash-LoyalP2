@@ -96,6 +96,8 @@ void Game::buildWaypoints()
     {
         addFourWaypoints(Vec2(LEFT_BRIDGE_CENTER_X, y));
     }
+
+    
 }
 
 void Game::addFourWaypoints(Vec2 pt)

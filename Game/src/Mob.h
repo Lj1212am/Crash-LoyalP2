@@ -41,6 +41,8 @@ protected:
     const Vec2* pickWaypoint();
     Mob* checkCollision();
     void processCollision(Mob* otherMob, float deltaTSec);
+    bool isObstructedByGiantOrTower(Entity* e, Player& friendlyPlayer) const;
+    bool lineSquareIntersection(Vec2 start, float size, Vec2 obj_pos) const;
 
 
 private:

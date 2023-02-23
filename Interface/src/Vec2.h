@@ -53,6 +53,9 @@ public:
     Vec2 operator/(const float f) const { return Vec2(x / f, y / f); }
     Vec2& operator/=(const float f) { x /= f; y /= f; return *this; }
 
+    // a Dot function to handle 2D vector multiplication
+    float dot(Vec2 other) const { return (float)this->x * (float)other.x + (float)this->y * (float)other.y; }
+
     float lengthSqr() const { return x * x + y * y; }
     float length() const { return sqrt(lengthSqr()); }
 

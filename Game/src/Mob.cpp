@@ -49,6 +49,149 @@ void Mob::tick(float deltaTSec)
     }
 }
 
+bool lineLineIntersect(Vec2 p1, Vec2 p2, Vec2 q1, Vec2 q2, Vec2& intersection)
+{
+    float x1 = p1.x, y1 = p1.y, x2 = p2.x, y2 = p2.y;
+    float x3 = q1.x, y3 = q1.y, x4 = q2.x, y4 = q2.y;
+
+    float denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
+    if (denom == 0.f) {
+        return false;  // lines are parallel
+    }
+
+    float t1 = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denom;
+    float t2 = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denom;
+
+    if (t1 >= 0.f && t1 <= 1.f && t2 >= 0.f && t2 <= 1.f) {
+        intersection.x = x1 + t1 * (x2 - x1);
+        intersection.y = y1 + t1 * (y2 - y1);
+        return true;
+    }
+    else {
+        return false;  // line segments do not intersect
+    }
+}
+
+
+bool Mob::lineSquareIntersection(Vec2 start, float size, Vec2 obj_pos) const
+{
+    Vec2 direction = start - m_Pos;
+    Vec2 topLeft = Vec2(obj_pos.x - (size / 2.0f), obj_pos.y - (size / 2.0f));
+    Vec2 topRight = Vec2(obj_pos.x + (size / 2.0f), obj_pos.y - (size / 2.0f));
+    Vec2 bottomLeft = Vec2(obj_pos.x - (size / 2.0f), obj_pos.y + (size / 2.0f));
+    Vec2 bottomRight = Vec2(obj_pos.x + (size / 2.0f), obj_pos.y + (size / 2.0f));
+
+    // check intersection with top side
+    Vec2 intersection;
+    if (lineLineIntersect(start, m_Pos, topLeft, topRight, intersection)) {
+        if (intersection.x >= topLeft.x && intersection.x <= topRight.x) {
+            return true;
+        }
+    }
+
+    // check intersection with right side
+    if (lineLineIntersect(start, m_Pos, topRight, bottomRight, intersection)) {
+        if (intersection.y >= topRight.y && intersection.y <= bottomRight.y) {
+            return true;
+        }
+    }
+
+    // check intersection with bottom side
+    if (lineLineIntersect(start, m_Pos, bottomLeft, bottomRight, intersection)) {
+        if (intersection.x >= bottomLeft.x && intersection.x <= bottomRight.x) {
+            return true;
+        }
+    }
+
+    // check intersection with left side
+    if (lineLineIntersect(start, m_Pos, topLeft, bottomLeft, intersection)) {
+        if (intersection.y >= topLeft.y && intersection.y <= bottomLeft.y) {
+            return true;
+        }
+    }
+
+    // no intersection found
+    return false;
+}
+
+
+
+
+
+
+
+
+//    Vec2 t_near;
+//    Vec2 t_far;
+//    t_near.x = (top_left.x - start.x) / direction.x;
+//    t_near.y = (top_left.y - start.y) / direction.y;
+//    t_far.x = (top_left.x + size - start.x) / direction.x;
+//    t_far.y = (top_left.y + size - start.y) / direction.y;
+//    
+//    //if (t_near.x > t_far.x)
+//    //{
+//    //    float tmp_x = t_near.x;
+//    //    t_near.x = t_far.x;
+//    //    t_far.x = tmp_x;
+//    //}
+//    //if (t_near.y > t_far.y)
+//    //{
+//    //    float tmp_y = t_near.y;
+//    //    t_near.y = t_far.y;
+//    //    t_far.y = tmp_y;
+//    //}
+//    if (t_near.x > t_far.x) std::swap(t_near.x, t_far.x);
+//    if (t_near.y > t_far.y) std::swap(t_near.y, t_far.y);
+//
+//    if (t_near.x > t_far.y || t_near.y > t_far.x)
+//    {
+//        return false;
+//    }
+//
+//    float t_hit_near = std::max(t_near.x, t_near.y);
+//    float t_hit_far = std::min(t_far.x, t_far.y);
+//
+//    if (t_hit_far < 0)
+//    {
+//        return false;
+//    }
+//
+//    return true;
+//
+//}
+
+bool Mob::isObstructedByGiantOrTower(Entity* e, Player& friendlyPlayer) const
+{
+    Vec2 direction = e->getPosition() - m_Pos;
+    float distance = direction.length();
+
+    std::vector<Entity*> playerEntities;
+    playerEntities.insert(playerEntities.end(), friendlyPlayer.getMobs().begin(), friendlyPlayer.getMobs().end());
+    playerEntities.insert(playerEntities.end(), friendlyPlayer.getBuildings().begin(), friendlyPlayer.getBuildings().end());
+
+    for (Entity* entity : friendlyPlayer.getBuildings())
+    {
+        if(lineSquareIntersection(e->getPosition(), entity->getStats().getSize(), entity->getPosition()) && !entity->isDead())
+        {
+            printf("is obstructed by building %s \n", entity->getStats().getName());
+            return true;
+        }
+    }
+    for (Entity* entity : friendlyPlayer.getMobs())
+    {
+        if (entity->getStats().getMobType() == iEntityStats::MobType::Giant)
+        {
+            if(lineSquareIntersection(e->getPosition(), entity->getStats().getSize(), entity->getPosition()) && !entity->isDead())
+            {
+                printf("is obstructed by giant %s \n", entity->getStats().getName());
+                return true;
+            }
+        }
+    }
+
+    //printf("seen by %s \n", e->getStats().getName());
+    return false;
+}
 
 bool Mob::isHidden() const
 {
@@ -77,7 +220,7 @@ bool Mob::isHidden() const
     // As a placeholder, just mark Rogues as always hidden.
     if (getStats().getMobType() == iEntityStats::MobType::Rogue)
     {
-        for (Entity* entity : southPlayer.getBuildings())
+        for (Entity* entity : gameEntities)
         {
             Vec2 direction = entity->getPosition() - m_Pos;
             float distance = direction.length();
@@ -85,7 +228,9 @@ bool Mob::isHidden() const
 
             if (m_bNorth != entity->isNorth() && !entity->isDead() && entity->getStats().getSightRadius() >= distance)
             {
-                return false;
+                //printf("is obstructed: %d\n", isObstructedByGiantOrTower(entity, Game::get().getPlayer(m_bNorth)));
+                return isObstructedByGiantOrTower(entity, Game::get().getPlayer(m_bNorth));
+              
             }
 
         }
@@ -205,6 +350,8 @@ const Vec2* Mob::pickWaypoint()
             pClosest = &pt;
         }
     }
+
+
 
     return pClosest;
 }
