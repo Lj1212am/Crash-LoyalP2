@@ -331,7 +331,8 @@ void Mob::move(float deltaTSec)
         }
         
     }
-    else
+    
+    if(!bMoveToTarget)
     {
         if (!m_pWaypoint)
         {
