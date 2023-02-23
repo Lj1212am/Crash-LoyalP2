@@ -47,7 +47,7 @@ protected:
     bool lineSquareIntersection(Vec2 start, float size, Vec2 obj_pos) const;
     const Vec2* pickRogueWaypoint();
     bool isEnemyInSpringAttackRange();
-
+    bool friendlyGiantPreferRange();
 
 private:
     const Vec2* m_pWaypoint;

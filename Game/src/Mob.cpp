@@ -239,6 +239,44 @@ bool Mob::isEnemyInSpringAttackRange()
 }
 
 
+bool Mob::friendlyGiantPreferRange()
+{
+    Vec2 destPos;
+    Player& friendlyPlayer = Game::get().getPlayer(m_bNorth);
+    bool bMoveToTarget = false;
+    bool hasTarget = false;
+
+
+    float closestDist = getStats().perferGiantRange();
+    float closestDistSq = closestDist * closestDist;
+    for (Entity* pEntity : friendlyPlayer.getMobs())
+
+    {
+        assert(pEntity->isNorth() == isNorth());
+        if (!pEntity->isDead())
+        {
+            if (pEntity->getStats().getMobType() == iEntityStats::MobType::Giant)
+            {
+                float distSq = m_Pos.distSqr(pEntity->getPosition());
+                if (distSq < closestDistSq)
+                {
+                    closestDistSq = distSq;
+                    destPos = pEntity->getPosition();
+                    m_pTarget = pEntity;
+                    m_eFriendlyGiant = pEntity;
+                    hasTarget = true;
+                    m_pWaypoint = NULL;
+                    m_bFollowingGiant = true;
+                    return true;
+
+                }
+            }
+        }
+    }
+    return false;
+
+}
+
 void Mob::move(float deltaTSec)
 {
     // Project 2: You'll likely need to do some work in this function to get the 
@@ -389,6 +427,18 @@ void Mob::move(float deltaTSec)
         }
         else if (m_bFollowingBuilding)
         {
+            if (friendlyGiantPreferRange())
+            {
+                destPos = m_eFriendlyGiant->getPosition();
+                if (m_bNorth)
+                {
+                    destPos.y -= (m_eFriendlyGiant->getStats().getSize() / 2.f) + getStats().getHideDistance();
+                }
+                else
+                {
+                    destPos.y += (m_eFriendlyGiant->getStats().getSize() / 2.f) + getStats().getHideDistance();
+                }
+            }
             destPos = m_eFriendlyBuilding->getPosition();
             if (m_bNorth)
             {
