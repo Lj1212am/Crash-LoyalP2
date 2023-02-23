@@ -195,7 +195,7 @@ bool Mob::isHiding() const
 
 bool Mob::isHidden() const
 {
-    return isHiding() && m_ticksSinceHidden >= 2.f / 0.05f;
+    return isHiding() && m_ticksSinceHidden >= getStats().timeToHide() / 0.05f;
     // Project 2: This is where you should put the logic for checking if a Rogue is
     // hidden or not.  It probably involves something related to calling Game::Get()
     // to get the Game, then calling getPlayer() on the game to get each player, then
@@ -402,6 +402,7 @@ void Mob::move(float deltaTSec)
     } 
     else
     {
+        
         //printf("Spring attack?, %d\n", isEnemyInSpringAttackRange());
         if (isEnemyInSpringAttackRange())
         {
@@ -449,6 +450,73 @@ void Mob::move(float deltaTSec)
                 destPos.y += (m_eFriendlyBuilding->getStats().getSize() / 2.f) + getStats().getHideDistance();
             }
         }
+        else
+        {
+            for (Entity* pEntity : friendlyPlayer.getMobs())
+            {
+                assert(pEntity->isNorth() == isNorth());
+                if (!pEntity->isDead())
+                {
+                    if (pEntity->getStats().getMobType() == iEntityStats::MobType::Giant)
+                    {
+                        float distSq = m_Pos.distSqr(pEntity->getPosition());
+                        if (distSq < closestDistSq)
+                        {
+                            closestDistSq = distSq;
+                            destPos = pEntity->getPosition();
+                            m_pTarget = pEntity;
+                            m_eFriendlyGiant = pEntity;
+                            hasTarget = true;
+                            m_pWaypoint = NULL;
+                            m_bFollowingGiant = true;
+                            if (m_bNorth)
+                            {
+                                destPos.y -= (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
+                            }
+                            else
+                            {
+                                destPos.y += (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
+                            }
+                        }
+                    }
+                }
+            }
+            if (!hasTarget)
+            {
+                for (Entity* pEntity : friendlyPlayer.getBuildings())
+                {
+                    assert(pEntity->isNorth() == isNorth());
+                    if (!pEntity->isDead())
+                    {
+                        if (pEntity->getStats().getType() == iEntityStats::Building)
+                        {
+                            printf("arrived to friendly building \n");
+                            float distSq = m_Pos.distSqr(pEntity->getPosition());
+                            if (distSq < closestDistSq)
+                            {
+                                closestDistSq = distSq;
+                                destPos = pEntity->getPosition();
+                                m_pTarget = pEntity;
+                                m_eFriendlyBuilding = pEntity;
+                                hasTarget = true;
+                                m_pWaypoint = NULL;
+                                m_bFollowingBuilding = true;
+                                if (m_bNorth)
+                                {
+                                    destPos.y -= (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
+                                }
+                                else
+                                {
+                                    destPos.y += (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+        
         
 
     }

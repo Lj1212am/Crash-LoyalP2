@@ -89,6 +89,7 @@ public:
     virtual int getDamage() const = 0;
     virtual float getAttackTime() const = 0;
     virtual float getSightRadius() const = 0;
+    
     virtual const char* getName() const = 0;
     virtual const char* getDisplayLetter() const = 0;
 
@@ -103,6 +104,7 @@ public:
     virtual int getSpringAttackDamage() const{ assert(false && "Mob is not a rogue!"); return 0; }
     virtual float perferGiantRange() const { assert(false && "Mob is not a rogue!"); return 0.f; }
     virtual float getHideDistance() const { assert(false && "Mob is not a rogue!"); return 0; }
+    virtual float timeToHide() const { assert(false && "Mob is not a rogue!"); return 0; }
 };
 
 class iEntityStats_Mob : public iEntityStats

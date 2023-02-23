@@ -50,6 +50,7 @@ public:
     virtual int getSpringAttackDamage() const { return 1000; }
     virtual float perferGiantRange() const { return 2.f; }
     virtual float getHideDistance() const { return 0.5f; }
+    virtual float timeToHide() const { return 2.f; }
 };
 
 class EntityStats_Swordsman : public iEntityStats_Mob
