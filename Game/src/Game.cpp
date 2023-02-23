@@ -43,6 +43,7 @@ Game::Game()
     buildPlayers(new Controller_AI_KevinDill, new Controller_UI);
 
     buildWaypoints();
+    buildRogueWaypoints();
 }
 
 Game::~Game()
@@ -87,8 +88,20 @@ void Game::buildPlayers(iController* pNorthControl, iController* pSouthControl)
 
 void Game::buildWaypoints()
 {
-    // The first waypoint is 1 tile toward the center of the princess tower
     const float princessSize = iEntityStats::getBuildingStats(iEntityStats::Princess).getSize();
+    const float kingSize = iEntityStats::getBuildingStats(iEntityStats::King).getSize();
+
+    const Vec2 northLeftPrincess(PrincessLeftX + (princessSize / 2.f) + 1.f, NorthPrincessY - 5.f);
+    const Vec2 northRightPrincess(PrincessRightX + (princessSize / 2.f) + 1.f, NorthPrincessY - 5.f);
+    const Vec2 northKing(KingX + (kingSize / 2.f) + 1.f, NorthKingY);
+
+    const Vec2 southLeftPrincess(PrincessLeftX + (princessSize / 2.f) + 1.f, SouthPrincessY + 5.f);
+    const Vec2 southRightPrincess(PrincessRightX + (princessSize / 2.f) + 1.f, SouthPrincessY + 5.f);
+    const Vec2 southKing(KingX + (kingSize / 2.f) + 1.f, SouthKingY + 5.f);
+
+    // The first waypoint is 1 tile toward the center of the princess tower
+    //const float princessSize = iEntityStats::getBuildingStats(iEntityStats::Princess).getSize();
+
     const Vec2 first(PrincessLeftX + (princessSize / 2.f) + 1.f, NorthPrincessY);
     addFourWaypoints(first);
 
@@ -97,7 +110,31 @@ void Game::buildWaypoints()
         addFourWaypoints(Vec2(LEFT_BRIDGE_CENTER_X, y));
     }
 
+    //m_Waypoints.push_back(northKing);
+    //m_Waypoints.push_back(southKing);
+
     
+}
+
+void Game::buildRogueWaypoints()
+{
+        const float princessSize = iEntityStats::getBuildingStats(iEntityStats::Princess).getSize();
+        const float kingSize = iEntityStats::getBuildingStats(iEntityStats::King).getSize();
+
+        const Vec2 northLeftPrincess(PrincessLeftX + (princessSize / 2.f) + 1.f, NorthPrincessY - 5.f);
+        const Vec2 northRightPrincess(PrincessRightX + (princessSize / 2.f) + 1.f, NorthPrincessY - 5.f);
+        const Vec2 northKing(KingX + (kingSize / 2.f) + 1.f, NorthKingY);
+
+        const Vec2 southLeftPrincess(PrincessLeftX + (princessSize / 2.f) + 1.f, SouthPrincessY + 5.f);
+        const Vec2 southRightPrincess(PrincessRightX + (princessSize / 2.f) + 1.f, SouthPrincessY + 5.f);
+        const Vec2 southKing(KingX + (kingSize / 2.f) + 1.f, SouthKingY + 5.f);
+
+        /**_RogueWaypoints.push_back(northKing);
+        m_RogueWaypoints.push_back(southKing);
+        m_Waypoints.push_back(Vec2(pt.x, bottomY));
+        m_Waypoints.push_back(Vec2(rightX, bottomY));*/
+
+
 }
 
 void Game::addFourWaypoints(Vec2 pt)

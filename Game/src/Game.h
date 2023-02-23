@@ -42,6 +42,7 @@ public:
     Player& getPlayer(bool bNorth) { return bNorth ? *m_pNorthPlayer : *m_pSouthPlayer; }
 
     const std::vector<Vec2>& getWaypoints() const { return m_Waypoints; }
+    const std::vector<Vec2>& getRogueWaypoints() const { return m_RogueWaypoints; }
 
     int checkGameOver();
 
@@ -49,6 +50,7 @@ private:
     void buildPlayers(iController* pNorthControl, iController* pSouthControl);
 
     void buildWaypoints();
+    void buildRogueWaypoints();
     void addFourWaypoints(Vec2 pt);
 
 private:
@@ -56,6 +58,7 @@ private:
     Player* m_pSouthPlayer;
 
     std::vector<Vec2> m_Waypoints;
+    std::vector<Vec2> m_RogueWaypoints;
 
     // Negative => South won, Positive => North won, 0 => no winner yet
     int gameOverState; 

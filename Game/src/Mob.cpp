@@ -134,7 +134,7 @@ bool Mob::isObstructedByGiantOrTower(Entity* e, Player& friendlyPlayer) const
     {
         if(lineSquareIntersection(e->getPosition(), entity->getStats().getSize(), entity->getPosition()) && !entity->isDead())
         {
-            printf("is obstructed by building %s \n", entity->getStats().getName());
+            //printf("is obstructed by building %s \n", entity->getStats().getName());
             return true;
         }
     }
@@ -144,7 +144,7 @@ bool Mob::isObstructedByGiantOrTower(Entity* e, Player& friendlyPlayer) const
         {
             if(lineSquareIntersection(e->getPosition(), entity->getStats().getSize(), entity->getPosition()) && !entity->isDead())
             {
-                printf("is obstructed by giant %s \n", entity->getStats().getName());
+                //printf("is obstructed by giant %s \n", entity->getStats().getName());
                 return true;
             }
         }
@@ -208,62 +208,62 @@ bool Mob::isHidden() const
     
 }
 
-void Mob::rogueMove()
-{
-    // we only attack things that are within our sight radius
-    float closestDist = getStats().getSightRadius();
-    float closestDistSq = closestDist * closestDist;
-
-    Player& opposingPlayer = Game::get().getPlayer(!m_bNorth);
-    Player& friendlyPlayer = Game::get().getPlayer(m_bNorth);
-
-    //if (!isHidden())
-    //{
-        assert(!m_bTargetLock || !!m_pTarget);
-        if (m_bTargetLock && !m_pTarget->isDead())
-        {
-            return;
-        }
-
-        m_pTarget = NULL;
-        m_bTargetLock = false;
-
-        for (Entity* pEntity : opposingPlayer.getMobs())
-        {
-            assert(pEntity->isNorth() != isNorth());
-            if (!pEntity->isDead())
-            {
-                float distSq = m_Pos.distSqr(pEntity->getPosition());
-                if (distSq < closestDistSq)
-                {
-                    closestDistSq = distSq;
-                    m_pTarget = pEntity;
-                }
-
-            }
-        }
-        if (m_pTarget = NULL)
-        {
-            for (Entity* pEntity : friendlyPlayer.getMobs())
-            {
-                assert(pEntity->isNorth() == isNorth());
-                if (!pEntity->isDead())
-                {
-                    if (pEntity->getStats().getMobType() == iEntityStats::MobType::Giant)
-                    {
-                        float distSq = m_Pos.distSqr(pEntity->getPosition());
-                        if (distSq < closestDistSq)
-                        {
-                            closestDistSq = distSq;
-                            m_pTarget = pEntity;
-                        }
-                    }
-                }
-            }
-        }
-    
-
-}
+//void Mob::rogueMove()
+//{
+//    // we only attack things that are within our sight radius
+//    float closestDist = getStats().getSightRadius();
+//    float closestDistSq = closestDist * closestDist;
+//
+//    Player& opposingPlayer = Game::get().getPlayer(!m_bNorth);
+//    Player& friendlyPlayer = Game::get().getPlayer(m_bNorth);
+//
+//    //if (!isHidden())
+//    //{
+//        assert(!m_bTargetLock || !!m_pTarget);
+//        if (m_bTargetLock && !m_pTarget->isDead())
+//        {
+//            return;
+//        }
+//
+//        m_pTarget = NULL;
+//        m_bTargetLock = false;
+//
+//        for (Entity* pEntity : opposingPlayer.getMobs())
+//        {
+//            assert(pEntity->isNorth() != isNorth());
+//            if (!pEntity->isDead())
+//            {
+//                float distSq = m_Pos.distSqr(pEntity->getPosition());
+//                if (distSq < closestDistSq)
+//                {
+//                    closestDistSq = distSq;
+//                    m_pTarget = pEntity;
+//                }
+//
+//            }
+//        }
+//        if (m_pTarget = NULL)
+//        {
+//            for (Entity* pEntity : friendlyPlayer.getMobs())
+//            {
+//                assert(pEntity->isNorth() == isNorth());
+//                if (!pEntity->isDead())
+//                {
+//                    if (pEntity->getStats().getMobType() == iEntityStats::MobType::Giant)
+//                    {
+//                        float distSq = m_Pos.distSqr(pEntity->getPosition());
+//                        if (distSq < closestDistSq)
+//                        {
+//                            closestDistSq = distSq;
+//                            m_pTarget = pEntity;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    
+//
+//}
 
 void Mob::move(float deltaTSec)
 {
@@ -304,6 +304,7 @@ void Mob::move(float deltaTSec)
     }
     else if (getStats().getMobType() == iEntityStats::MobType::Rogue)
     {
+        bool foundGiant = false;
         for (Entity* pEntity : friendlyPlayer.getMobs())
         {
             assert(pEntity->isNorth() == isNorth());
@@ -314,9 +315,10 @@ void Mob::move(float deltaTSec)
                     float distSq = m_Pos.distSqr(pEntity->getPosition());
                     if (distSq < closestDistSq)
                     {
+                        //printf("distSqr: %f, SightSqrd %f\n", distSq, closestDistSq);
                         closestDistSq = distSq;
                         destPos = pEntity->getPosition();
-
+                        foundGiant = true;
                         if (m_bNorth)
                         {
                             destPos.y -= (pEntity->getStats().getSize() / 2.f) + 0.5f;
@@ -329,6 +331,17 @@ void Mob::move(float deltaTSec)
                 }
             }
         }
+        if (!foundGiant)
+        {
+            if (!m_pWaypoint)
+            {
+                m_pWaypoint = pickWaypoint();
+                printf("Rogue destination x: %f, y: %f\n", m_pWaypoint->x, m_pWaypoint->y);
+            }
+            destPos = m_pWaypoint ? *m_pWaypoint : m_Pos;
+           // printf("Rogue destination x: %f, y: %f\n", destPos.x, destPos.y);
+        }
+
         
     }
     else
@@ -342,6 +355,7 @@ void Mob::move(float deltaTSec)
     
 
     // Actually do the moving
+   
     Vec2 moveVec = destPos - m_Pos;
     float distRemaining = moveVec.normalize();
     float moveDist = m_Stats.getSpeed() * deltaTSec;
@@ -373,6 +387,8 @@ void Mob::move(float deltaTSec)
         }
     }
 
+    //printf("rogue x:  % f, y: % f \n", m_Pos.x, m_Pos.y);
+
     // Project 1: This is where your collision code will be called from
     Mob* otherMob = checkCollision();
     if (otherMob) {
@@ -391,27 +407,58 @@ const Vec2* Mob::pickWaypoint()
     float smallestDistSq = FLT_MAX;
     const Vec2* pClosest = NULL;
 
-    for (const Vec2& pt : Game::get().getWaypoints())
-    {
-        // Filter out any waypoints that are behind (or barely in front of) us.
-        // NOTE: (0, 0) is the top left corner of the screen
-        float yOffset = pt.y - m_Pos.y;
-        if ((m_bNorth && (yOffset < 1.f)) ||
-            (!m_bNorth && (yOffset > -1.f)))
-        {
-            continue;
-        }
 
-        float distSq = m_Pos.distSqr(pt);
-        if (distSq < smallestDistSq) {
-            smallestDistSq = distSq;
-            pClosest = &pt;
+    //if (getStats().getMobType() == iEntityStats::MobType::Rogue)
+    //{
+    //    std::vector<Vec2> rogueWaypoints = Game::get().getWaypoints();
+    //    printf("vector size: %d\n", rogueWaypoints.size());
+    //    if (m_bNorth)
+    //    {
+    //        pClosest = &rogueWaypoints[1];
+    //    }
+    //    else
+    //    {
+    //       
+    //        //pClosest = &southKing;
+    //        pClosest = &rogueWaypoints[0];;
+    //        
+    //    }
+    //    printf("Deciding upon waypoint for South rogue x: %f, y: %f\n", pClosest->x, pClosest->y);
+
+    //    return pClosest;
+    //}
+    //else
+    {
+        for (const Vec2& pt : Game::get().getWaypoints())
+        {
+            //printf("Waypoints x: %f, y: %f\n", pt.x, pt.y);
+            // Filter out any waypoints that are behind (or barely in front of) us.
+            // NOTE: (0, 0) is the top left corner of the screen
+            float yOffset = pt.y - m_Pos.y;
+            if ((m_bNorth && (yOffset < 1.f)) ||
+                (!m_bNorth && (yOffset > -1.f)))
+            {
+                continue;
+            }
+
+            
+
+            float distSq = m_Pos.distSqr(pt);
+            if (distSq < smallestDistSq) {
+                smallestDistSq = distSq;
+                pClosest = &pt;
+            }
+           
+
+            
         }
+        printf("I shouldn't be here x: %f, y: %f\n", pClosest->x, pClosest->y);
+        return pClosest;
+
     }
 
-
-
-    return pClosest;
+    /*printf("Deciding upon waypoint for South rogue x: %f, y: %f\n", pClosest->x, pClosest->y);
+    return pClosest;*/
 }
 
 // Project 1: 
