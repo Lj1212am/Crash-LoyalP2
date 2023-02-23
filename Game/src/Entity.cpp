@@ -47,19 +47,35 @@ void Entity::tick(float deltaTSec)
 
     pickTarget();
     m_TimeSinceAttack += deltaTSec;
+    int damage;
+
+    
+
+    //printf("damage: %d\n", damage);
     if (targetInRange() && (m_TimeSinceAttack > m_Stats.getAttackTime()))
     {
+        if (isInSpringAttackRange)
+        {
+
+            damage = m_Stats.getSpringAttackDamage();
+            printf("doing Spring attack damage %d. Damage: %d \n", isInSpringAttackRange, damage);
+        }
+        else
+        {
+            damage = m_Stats.getDamage();
+        }
         char buff[200];
         snprintf(buff, 200, "%s %s attacks %s %s for %d damage.\n",
                  m_bNorth ? "North" : "South",
                  m_Stats.getName(),
                  m_pTarget->isNorth() ? "North" : "South",
                  m_pTarget->getStats().getName(),
-                 m_Stats.getDamage());
+                 damage);
         std::cout << buff;
 
         m_bTargetLock = true;
-        m_pTarget->takeDamage(m_Stats.getDamage());
+        
+        m_pTarget->takeDamage(damage);
         m_TimeSinceAttack = 0.f;
     }
 }

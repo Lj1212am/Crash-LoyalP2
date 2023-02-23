@@ -210,6 +210,35 @@ bool Mob::isHidden() const
 
 
 
+bool Mob::isEnemyInSpringAttackRange()
+{
+    //printf("checking spring attack range\n");
+    Vec2 destPos;
+    Player& opposingPlayer = Game::get().getPlayer(!m_bNorth);
+
+    float springRange = getStats().getSpringRange();
+    float springRangeSq = springRange * springRange;
+
+    for (Entity* pEntity : opposingPlayer.getMobs())
+    {
+        assert(pEntity->isNorth() != isNorth());
+        if (!pEntity->isDead())
+        {
+
+            float distSq = m_Pos.distSqr(pEntity->getPosition());
+
+            //printf("enemy distance %f, spring attack range %f\n", distSq, springRangeSq);
+            if (distSq < springRangeSq)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+
+}
+
+
 void Mob::move(float deltaTSec)
 {
     // Project 2: You'll likely need to do some work in this function to get the 
@@ -228,88 +257,123 @@ void Mob::move(float deltaTSec)
     bool bMoveToTarget = false;
     bool hasTarget = false;
 
+
     float closestDist = getStats().getSightRadius();
     float closestDistSq = closestDist * closestDist;
-        
-    if (!!m_pTarget)
-    {
-        bool imTop = m_Pos.y < (GAME_GRID_HEIGHT / 2);
-        bool otherTop = m_pTarget->getPosition().y < (GAME_GRID_HEIGHT / 2);
 
-        if (imTop == otherTop)
-        {
-            bMoveToTarget = true;
-        }
-    }
-    
-        
-    if (bMoveToTarget)
+    if (!isHidden())
     {
-        m_pWaypoint = NULL;
-        destPos = m_pTarget->getPosition();
-        hasTarget = true;
-    }
-    else if (getStats().getMobType() == iEntityStats::MobType::Rogue)
-    {
-        
-        for (Entity* pEntity : friendlyPlayer.getMobs())
+        isInSpringAttackRange = false;
+        m_bFollowingGiant = false;
+
+        if (!!m_pTarget)
         {
-            assert(pEntity->isNorth() == isNorth());
-            if (!pEntity->isDead())
+            bool imTop = m_Pos.y < (GAME_GRID_HEIGHT / 2);
+            bool otherTop = m_pTarget->getPosition().y < (GAME_GRID_HEIGHT / 2);
+
+            if (imTop == otherTop)
             {
-                if (pEntity->getStats().getMobType() == iEntityStats::MobType::Giant)
+                bMoveToTarget = true;
+            }
+        }
+
+        
+        if (bMoveToTarget)
+        {
+            m_pWaypoint = NULL;
+            destPos = m_pTarget->getPosition();
+            hasTarget = true;
+        }
+        else if (getStats().getMobType() == iEntityStats::MobType::Rogue)
+        {
+
+            for (Entity* pEntity : friendlyPlayer.getMobs())
+            {
+                assert(pEntity->isNorth() == isNorth());
+                if (!pEntity->isDead())
                 {
-                    float distSq = m_Pos.distSqr(pEntity->getPosition());
-                    if (distSq < closestDistSq)
+                    if (pEntity->getStats().getMobType() == iEntityStats::MobType::Giant)
                     {
-                        closestDistSq = distSq;
-                        destPos = pEntity->getPosition();
-                        m_pTarget = pEntity;
-                        hasTarget = true;
-                        m_pWaypoint = NULL;
-                        if (m_bNorth)
+                        float distSq = m_Pos.distSqr(pEntity->getPosition());
+                        if (distSq < closestDistSq)
                         {
-                            destPos.y -= (pEntity->getStats().getSize() / 2.f) + 0.5f;
-                        }
-                        else
-                        {
-                            destPos.y += (pEntity->getStats().getSize() / 2.f) + 0.5f;
+                            closestDistSq = distSq;
+                            destPos = pEntity->getPosition();
+                            m_pTarget = pEntity;
+                            m_eFriendlyGiant = pEntity;
+                            hasTarget = true;
+                            m_pWaypoint = NULL;
+                            m_bFollowingGiant = true;
+                            if (m_bNorth)
+                            {
+                                destPos.y -= (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
+                            }
+                            else
+                            {
+                                destPos.y += (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
+                            }
                         }
                     }
                 }
             }
+
+        }
+        if (!hasTarget)
+        {
+            if (!m_pWaypoint)
+            {
+                m_pWaypoint = pickWaypoint();
+            }
+            destPos = m_pWaypoint ? *m_pWaypoint : m_Pos;
+
+
+        }
+    } 
+    else
+    {
+        //printf("Spring attack?, %d\n", isEnemyInSpringAttackRange());
+        if (isEnemyInSpringAttackRange())
+        {
+            printf("Spring attack!\n");
+            isInSpringAttackRange = true;
+            bMoveToTarget = true;
+            m_pWaypoint = NULL;
+            destPos = m_pTarget->getPosition();
+        }
+        else if (m_bFollowingGiant)
+        {
+           // printf("following giant?, %d\n", m_bFollowingGiant);
+            destPos = m_eFriendlyGiant->getPosition();
+            if (m_bNorth)
+            {
+                destPos.y -= (m_eFriendlyGiant->getStats().getSize() / 2.f) + getStats().getHideDistance();
+            }
+            else
+            {
+                destPos.y += (m_eFriendlyGiant->getStats().getSize() / 2.f) + getStats().getHideDistance();
+            }
+
         }
         
-    } 
-    if (!hasTarget)
-    {
-        if (!m_pWaypoint)
-        {
-            m_pWaypoint = pickWaypoint();
-        }
-        destPos = m_pWaypoint ? *m_pWaypoint : m_Pos;
-
 
     }
 
-    
- 
 
-    
-    //if(!foundGiant)
-    //{
-    //    if (!m_pWaypoint)
-    //    {
-    //        m_pWaypoint = pickWaypoint();
-    //    }
-    //    destPos = m_pWaypoint ? *m_pWaypoint : m_Pos;
-    //}
-    //
 
     // Actually do the moving
     Vec2 moveVec = destPos - m_Pos;
     float distRemaining = moveVec.normalize();
-    float moveDist = m_Stats.getSpeed() * deltaTSec;
+    float moveDist;
+    if (isInSpringAttackRange)
+    {
+        moveDist = m_Stats.getSpringSpeed() * deltaTSec;
+        
+    }
+    else
+    {
+        moveDist = m_Stats.getSpeed() * deltaTSec;
+    }
+    
 
     // if we're moving to m_pTarget, don't move into it
     if (bMoveToTarget)

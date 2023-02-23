@@ -44,12 +44,12 @@ public:
     virtual const char* getName() const { return "Rogue"; }
     virtual const char* getDisplayLetter() const { return "R"; }
 
-    virtual bool canSpringAttack() { return true; }
-    virtual float getSpringRange() { return 2.5; }
-    virtual float getSpringSpeed() { return 15; }
-    virtual float getSpringAttackDamage() { return 1000; }
-    virtual float perferGiantRange() { return 2.f; }
-    virtual float getHideDistance() { return 0.5f; }
+    virtual bool canSpringAttack() const { return true; }
+    virtual float getSpringRange() const { return 2.5; }
+    virtual float getSpringSpeed() const { return 15; }
+    virtual int getSpringAttackDamage() const { return 1000; }
+    virtual float perferGiantRange() const { return 2.f; }
+    virtual float getHideDistance() const { return 0.5f; }
 };
 
 class EntityStats_Swordsman : public iEntityStats_Mob

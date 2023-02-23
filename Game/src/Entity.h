@@ -55,6 +55,7 @@ public:
 protected:
     void pickTarget();
     bool targetInRange();
+    bool isInSpringAttackRange = false;
 
 protected:
     const iEntityStats& m_Stats;
@@ -62,6 +63,7 @@ protected:
     int m_Health;
     Vec2 m_Pos;
     int id;
+    
 
     // Our target will be the closest target (may change every tick) until
     //  we attack it.  Once we attack a target, we stay locked on it until

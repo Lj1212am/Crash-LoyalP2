@@ -97,12 +97,12 @@ public:
     // MobType actually is Rogue (otherwise the asserts will fire).
 
     // Special values for the Rogue.
-    virtual bool canSpringAttack() { return false; }
-    virtual float getSpringRange() { assert(false && "Mob is not a rogue!"); return 0.f; }
-    virtual float getSpringSpeed() { assert(false && "Mob is not a rogue!"); return 0.f; }
-    virtual float getSpringAttackDamage() { assert(false && "Mob is not a rogue!"); return 0.f; }
-    virtual float perferGiantRange() { assert(false && "Mob is not a rogue!"); return 0.f; }
-    virtual float getHideDistance() { assert(false && "Mob is not a rogue!"); return 0; }
+    virtual bool canSpringAttack() const { return false; }
+    virtual float getSpringRange() const { assert(false && "Mob is not a rogue!"); return 0.f; }
+    virtual float getSpringSpeed() const { assert(false && "Mob is not a rogue!"); return 0.f; }
+    virtual int getSpringAttackDamage() const{ assert(false && "Mob is not a rogue!"); return 0; }
+    virtual float perferGiantRange() const { assert(false && "Mob is not a rogue!"); return 0.f; }
+    virtual float getHideDistance() const { assert(false && "Mob is not a rogue!"); return 0; }
 };
 
 class iEntityStats_Mob : public iEntityStats
