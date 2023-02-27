@@ -239,6 +239,77 @@ bool Mob::isEnemyInSpringAttackRange()
 }
 
 
+Vec2 Mob::getHidingLocation(Entity* friendlyObject)
+{
+
+    Player& opposingPlayer = Game::get().getPlayer(!m_bNorth);
+    float closestDist = getStats().getSightRadius();
+    float closestDistSq = closestDist * closestDist;
+
+    std::vector<Entity*> opposingEntitiesInSight;
+
+    for (Entity* pEntity : opposingPlayer.getMobs())
+
+    {
+        assert(pEntity->isNorth() != isNorth());
+        if (!pEntity->isDead())
+        {
+            //if (pEntity->getStats().getMobType() == iEntityStats::MobType::Giant)
+            {
+                float distSq = m_Pos.distSqr(pEntity->getPosition());
+                if (distSq < closestDistSq)
+                {
+                    closestDistSq = distSq;
+                    opposingEntitiesInSight.push_back(pEntity);
+
+                }
+            }
+        }
+    }
+    
+    Vec2 destPos = friendlyObject->getPosition();
+
+    if (opposingEntitiesInSight.size() >=  0)
+
+    {
+        if (m_bNorth)
+        {
+            destPos.y -= (friendlyObject->getStats().getSize() / 2.f) + getStats().getHideDistance();
+        }
+        else
+        {
+            destPos.y += (friendlyObject->getStats().getSize() / 2.f) + getStats().getHideDistance();
+        }
+
+    }
+    else
+    {
+        float sumX = 0.f;
+        float sumY = 0.f;
+        for (Entity* pEntity : opposingEntitiesInSight)
+        {
+            sumX += pEntity->getPosition().x;
+            sumY += pEntity->getPosition().y;
+        }
+
+        Vec2 avgHidingVector = Vec2(sumX / (float) opposingEntitiesInSight.size(), sumY / (float) opposingEntitiesInSight.size());
+        avgHidingVector.normalize();
+        avgHidingVector = avgHidingVector * getStats().getHideDistance();
+
+        if (m_bNorth)
+        {
+            destPos += avgHidingVector;
+        }
+        else
+        {
+            destPos -= avgHidingVector;
+        }
+
+    }
+    return destPos;
+
+}
+
 bool Mob::friendlyGiantPreferRange()
 {
     Vec2 destPos;
@@ -430,15 +501,17 @@ void Mob::move(float deltaTSec)
         {
             if (friendlyGiantPreferRange())
             {
-                destPos = m_eFriendlyGiant->getPosition();
-                if (m_bNorth)
-                {
-                    destPos.y -= (m_eFriendlyGiant->getStats().getSize() / 2.f) + getStats().getHideDistance();
-                }
-                else
-                {
-                    destPos.y += (m_eFriendlyGiant->getStats().getSize() / 2.f) + getStats().getHideDistance();
-                }
+                destPos = getHidingLocation(m_eFriendlyGiant);
+                //destPos = m_eFriendlyGiant->getPosition();
+                //if (m_bNorth)
+                //{
+                //    //destPos.y -= (m_eFriendlyGiant->getStats().getSize() / 2.f) + getHidingLocation(m_eFriendlyGiant);//getStats().getHideDistance();
+                //    destPos -=  getHidingLocation(m_eFriendlyGiant);
+                //}
+                //else
+                //{
+                //    destPos.y += (m_eFriendlyGiant->getStats().getSize() / 2.f) + getStats().getHideDistance();
+                //}
             }
             destPos = m_eFriendlyBuilding->getPosition();
             if (m_bNorth)

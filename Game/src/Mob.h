@@ -48,6 +48,7 @@ protected:
     const Vec2* pickRogueWaypoint();
     bool isEnemyInSpringAttackRange();
     bool friendlyGiantPreferRange();
+    Vec2 getHidingLocation(Entity* friendlyObject);
 
 private:
     const Vec2* m_pWaypoint;
