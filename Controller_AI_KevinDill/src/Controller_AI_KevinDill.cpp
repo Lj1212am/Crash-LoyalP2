@@ -36,7 +36,7 @@ void Controller_AI_KevinDill::tick(float deltaTSec)
     assert(m_pPlayer);
 
     // wait for elixir
-    if (m_pPlayer->getElixir() >= 9)
+    if (m_pPlayer->getElixir() >= 11)
     {
         // convert the positions from player space to game space
         bool isNorth = m_pPlayer->isNorth();
