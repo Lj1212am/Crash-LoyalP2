@@ -245,10 +245,12 @@ Vec2 Mob::getHidingLocation(Entity* friendlyObject)
     Player& opposingPlayer = Game::get().getPlayer(!m_bNorth);
     float closestDist = getStats().getSightRadius();
     float closestDistSq = closestDist * closestDist;
-
+    std::vector<Entity*> gameEntities;
     std::vector<Entity*> opposingEntitiesInSight;
+    gameEntities.insert(gameEntities.end(), opposingPlayer.getMobs().begin(), opposingPlayer.getMobs().end());
+    gameEntities.insert(gameEntities.end(), opposingPlayer.getBuildings().begin(), opposingPlayer.getBuildings().end());
 
-    for (Entity* pEntity : opposingPlayer.getMobs())
+    for (Entity* pEntity : gameEntities)
 
     {
         assert(pEntity->isNorth() != isNorth());
@@ -269,7 +271,7 @@ Vec2 Mob::getHidingLocation(Entity* friendlyObject)
     
     Vec2 destPos = friendlyObject->getPosition();
 
-    if (opposingEntitiesInSight.size() >=  0)
+    if (opposingEntitiesInSight.size() <=  0)
 
     {
         if (m_bNorth)
@@ -288,23 +290,24 @@ Vec2 Mob::getHidingLocation(Entity* friendlyObject)
         float sumY = 0.f;
         for (Entity* pEntity : opposingEntitiesInSight)
         {
-            sumX += pEntity->getPosition().x;
-            sumY += pEntity->getPosition().y;
+            Vec2 newPos = friendlyObject->getPosition() - pEntity->getPosition();
+            sumX += newPos.x;
+            sumY += newPos.y;
         }
 
         Vec2 avgHidingVector = Vec2(sumX / (float) opposingEntitiesInSight.size(), sumY / (float) opposingEntitiesInSight.size());
+        //printf("hiding vec pre-normalize x: %f, y: %f\n", avgHidingVector.x, avgHidingVector.y);
         avgHidingVector.normalize();
-        avgHidingVector = avgHidingVector * getStats().getHideDistance();
-
-        if (m_bNorth)
-        {
-            destPos += avgHidingVector;
-        }
-        else
-        {
-            destPos -= avgHidingVector;
-        }
-
+        avgHidingVector = avgHidingVector * ((friendlyObject->getStats().getSize() / 1.7f) + getStats().getHideDistance());
+        //if (m_bNorth)
+        //{
+        //    destPos += avgHidingVector;
+        //}
+        //else
+        //{
+        //    destPos -= avgHidingVector;
+        //}
+        destPos += avgHidingVector;
     }
     return destPos;
 
@@ -413,14 +416,16 @@ void Mob::move(float deltaTSec)
                             hasTarget = true;
                             m_pWaypoint = NULL;
                             m_bFollowingGiant = true;
-                            if (m_bNorth)
-                            {
-                                destPos.y -= (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
-                            }
-                            else
-                            {
-                                destPos.y += (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
-                            }
+
+                            destPos = getHidingLocation(pEntity);
+                            //if (m_bNorth)
+                            //{
+                            //    destPos.y -= (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
+                            //}
+                            //else
+                            //{
+                            //    destPos.y += (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
+                            //}
                         }
                     }
                 }
@@ -434,7 +439,7 @@ void Mob::move(float deltaTSec)
                     {
                         if (pEntity->getStats().getType() == iEntityStats::Building)
                         {
-                            printf("arrived to friendly building \n");
+                            //printf("arrived to friendly building \n");
                             float distSq = m_Pos.distSqr(pEntity->getPosition());
                             if (distSq < closestDistSq)
                             {
@@ -445,14 +450,16 @@ void Mob::move(float deltaTSec)
                                 hasTarget = true;
                                 m_pWaypoint = NULL;
                                 m_bFollowingBuilding = true;
-                                if (m_bNorth)
-                                {
-                                    destPos.y -= (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
-                                }
-                                else
-                                {
-                                    destPos.y += (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
-                                }
+                                
+                                destPos = getHidingLocation(pEntity);
+                                //if (m_bNorth)
+                                //{
+                                //    destPos.y -= (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
+                                //}
+                                //else
+                                //{
+                                //    destPos.y += (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
+                                //}
                             }
                         }
                     }
@@ -486,15 +493,16 @@ void Mob::move(float deltaTSec)
         else if (m_bFollowingGiant)
         {
            // printf("following giant?, %d\n", m_bFollowingGiant);
-            destPos = m_eFriendlyGiant->getPosition();
-            if (m_bNorth)
-            {
-                destPos.y -= (m_eFriendlyGiant->getStats().getSize() / 2.f) + getStats().getHideDistance();
-            }
-            else
-            {
-                destPos.y += (m_eFriendlyGiant->getStats().getSize() / 2.f) + getStats().getHideDistance();
-            }
+            //destPos = m_eFriendlyGiant->getPosition();
+            //if (m_bNorth)
+            //{
+            //    destPos.y -= (m_eFriendlyGiant->getStats().getSize() / 2.f) + getStats().getHideDistance();
+            //}
+            //else
+            //{
+            //    destPos.y += (m_eFriendlyGiant->getStats().getSize() / 2.f) + getStats().getHideDistance();
+            //}
+            destPos = getHidingLocation(m_eFriendlyGiant);
 
         }
         else if (m_bFollowingBuilding)
@@ -513,15 +521,16 @@ void Mob::move(float deltaTSec)
                 //    destPos.y += (m_eFriendlyGiant->getStats().getSize() / 2.f) + getStats().getHideDistance();
                 //}
             }
-            destPos = m_eFriendlyBuilding->getPosition();
-            if (m_bNorth)
-            {
-                destPos.y -= (m_eFriendlyBuilding->getStats().getSize() / 2.f) + getStats().getHideDistance();
-            }
-            else
-            {
-                destPos.y += (m_eFriendlyBuilding->getStats().getSize() / 2.f) + getStats().getHideDistance();
-            }
+            destPos = getHidingLocation(m_eFriendlyBuilding);
+            //destPos = m_eFriendlyBuilding->getPosition();
+            //if (m_bNorth)
+            //{
+            //    destPos.y -= (m_eFriendlyBuilding->getStats().getSize() / 2.f) + getStats().getHideDistance();
+            //}
+            //else
+            //{
+            //    destPos.y += (m_eFriendlyBuilding->getStats().getSize() / 2.f) + getStats().getHideDistance();
+            //}
         }
         else
         {
@@ -542,14 +551,16 @@ void Mob::move(float deltaTSec)
                             hasTarget = true;
                             m_pWaypoint = NULL;
                             m_bFollowingGiant = true;
-                            if (m_bNorth)
+
+                            destPos = getHidingLocation(pEntity);
+                            /*if (m_bNorth)
                             {
                                 destPos.y -= (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
                             }
                             else
                             {
                                 destPos.y += (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
-                            }
+                            }*/
                         }
                     }
                 }
@@ -563,7 +574,7 @@ void Mob::move(float deltaTSec)
                     {
                         if (pEntity->getStats().getType() == iEntityStats::Building)
                         {
-                            printf("arrived to friendly building \n");
+                            //printf("arrived to friendly building \n");
                             float distSq = m_Pos.distSqr(pEntity->getPosition());
                             if (distSq < closestDistSq)
                             {
@@ -574,14 +585,16 @@ void Mob::move(float deltaTSec)
                                 hasTarget = true;
                                 m_pWaypoint = NULL;
                                 m_bFollowingBuilding = true;
-                                if (m_bNorth)
+                                
+                                destPos = getHidingLocation(pEntity);
+                                /*if (m_bNorth)
                                 {
                                     destPos.y -= (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
                                 }
                                 else
                                 {
                                     destPos.y += (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
-                                }
+                                }*/
                             }
                         }
                     }
