@@ -123,7 +123,7 @@ void Entity::pickTarget()
         for (Entity* pEntity : opposingPlayer.getMobs())
         {
             assert(pEntity->isNorth() != isNorth());
-            if (!pEntity->isDead())
+            if (!pEntity->isDead() && !pEntity->isHidden())
             {
                 float distSq = m_Pos.distSqr(pEntity->getPosition());
                 if (distSq < closestDistSq)
