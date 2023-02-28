@@ -57,7 +57,7 @@ void Mob::tick(float deltaTSec)
         move(deltaTSec);
     }
 }
-
+// Checks if two lines intersect.
 bool lineLineIntersect(Vec2 p1, Vec2 p2, Vec2 q1, Vec2 q2, Vec2& intersection)
 {
     float x1 = p1.x, y1 = p1.y, x2 = p2.x, y2 = p2.y;
@@ -65,7 +65,8 @@ bool lineLineIntersect(Vec2 p1, Vec2 p2, Vec2 q1, Vec2 q2, Vec2& intersection)
 
     float denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
     if (denom == 0.f) {
-        return false;  // lines are parallel
+        // lines are parallel
+        return false;  
     }
 
     float t1 = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denom;
@@ -77,7 +78,8 @@ bool lineLineIntersect(Vec2 p1, Vec2 p2, Vec2 q1, Vec2 q2, Vec2& intersection)
         return true;
     }
     else {
-        return false;  // line segments do not intersect
+        // line segments do not intersect
+        return false;  
     }
 }
 
@@ -127,24 +129,23 @@ bool Mob::lineSquareIntersection(Vec2 start, float size, Vec2 obj_pos) const
 
 bool Mob::isObstructedByGiantOrTower(Entity* e, Player& friendlyPlayer) const
 {
-    Vec2 direction = e->getPosition() - m_Pos;
-    float distance = direction.length();
-
+    // For each friendly building check if the vector between the entity and mob is 
+    // intersected by a building.
     for (Entity* entity : friendlyPlayer.getBuildings())
     {
         if(lineSquareIntersection(e->getPosition(), entity->getStats().getSize(), entity->getPosition()) && !entity->isDead())
         {
-            //printf("is obstructed by building %s \n", entity->getStats().getName());
             return true;
         }
     }
+    // For each friendly building check if the vector between the entity and mob is 
+    // intersected by a giant.   
     for (Entity* entity : friendlyPlayer.getMobs())
     {
         if (entity->getStats().getMobType() == iEntityStats::MobType::Giant)
         {
             if(lineSquareIntersection(e->getPosition(), entity->getStats().getSize(), entity->getPosition()) && !entity->isDead())
             {
-                //printf("is obstructed by giant %s \n", entity->getStats().getName());
                 return true;
             }
         }
@@ -156,6 +157,7 @@ bool Mob::isObstructedByGiantOrTower(Entity* e, Player& friendlyPlayer) const
 
 bool Mob::isHiding() const
 {
+    // Gets all the entities in the game.
     Player& northPlayer = Game::get().getPlayer(true);
     Player& southPlayer = Game::get().getPlayer(false);
 
@@ -168,17 +170,19 @@ bool Mob::isHiding() const
     gameEntities.insert(gameEntities.end(), southPlayer.getBuildings().begin(), southPlayer.getBuildings().end());
 
 
-
+    // If the mob is a rogue.
     if (getStats().getMobType() == iEntityStats::MobType::Rogue)
     {
+        // for each entity in game entities.
         for (Entity* entity : gameEntities)
         {
             Vec2 direction = entity->getPosition() - m_Pos;
             float distance = direction.length();
 
-
+            // If the entity is from the opposing player, its not dead and the mob is within the entity's sight radius.
             if (m_bNorth != entity->isNorth() && !entity->isDead() && entity->getStats().getSightRadius() >= distance)
             {
+                // Check if the mob is not obstructed by a giant or tower from the entity.
                 if (!isObstructedByGiantOrTower(entity, Game::get().getPlayer(m_bNorth)))
                 {
                     return false;
@@ -195,7 +199,6 @@ bool Mob::isHiding() const
 
 bool Mob::isHidden() const
 {
-    return isHiding() && m_ticksSinceHidden >= 2.f / 0.05f;
     // Project 2: This is where you should put the logic for checking if a Rogue is
     // hidden or not.  It probably involves something related to calling Game::Get()
     // to get the Game, then calling getPlayer() on the game to get each player, then
@@ -205,6 +208,9 @@ bool Mob::isHidden() const
     // to change the way the character renders (Rogues on the South team will render
     // as grayed our when hidden, ones on the North team won't render at all).
 
+    // A mob is hidden if it has been hiding for longer than 2 seconds. 
+    return isHiding() && m_ticksSinceHidden >= getStats().timeToHide() / 0.05f;
+
     
 }
 
@@ -212,13 +218,14 @@ bool Mob::isHidden() const
 
 bool Mob::isEnemyInSpringAttackRange()
 {
-    //printf("checking spring attack range\n");
     Vec2 destPos;
     Player& opposingPlayer = Game::get().getPlayer(!m_bNorth);
 
     float springRange = getStats().getSpringRange();
     float springRangeSq = springRange * springRange;
 
+    // Checks whether the opposing player has a mob that is in
+    // spring attack range for each mob.
     for (Entity* pEntity : opposingPlayer.getMobs())
     {
         assert(pEntity->isNorth() != isNorth());
@@ -227,7 +234,6 @@ bool Mob::isEnemyInSpringAttackRange()
 
             float distSq = m_Pos.distSqr(pEntity->getPosition());
 
-            //printf("enemy distance %f, spring attack range %f\n", distSq, springRangeSq);
             if (distSq < springRangeSq)
             {
                 return true;
@@ -238,6 +244,137 @@ bool Mob::isEnemyInSpringAttackRange()
 
 }
 
+
+Vec2 Mob::getHidingLocation(Entity* friendlyObject)
+{
+    // Get the opposing player and sight range.
+    Player& opposingPlayer = Game::get().getPlayer(!m_bNorth);
+    float closestDist = getStats().getSightRadius() + 0.1f;
+    float closestDistSq = closestDist * closestDist;
+
+    // Get the game entities of the opposing player.
+    std::vector<Entity*> gameEntities;
+    std::vector<Entity*> opposingEntitiesInSight;
+
+    gameEntities.insert(gameEntities.end(), opposingPlayer.getMobs().begin(), opposingPlayer.getMobs().end());
+    gameEntities.insert(gameEntities.end(), opposingPlayer.getBuildings().begin(), opposingPlayer.getBuildings().end());
+
+    // For each opposing player's game entity.
+    for (Entity* pEntity : gameEntities)
+    {
+        assert(pEntity->isNorth() != isNorth());
+        if (!pEntity->isDead())
+        {
+            // If the entity is within sight of the rogue
+            float distSq = m_Pos.distSqr(pEntity->getPosition());
+            if (distSq < closestDistSq)
+            {
+                // If the rogue would be seen by the entity
+                float enemySightSq = (pEntity->getStats().getSightRadius() + 0.1f) * (pEntity->getStats().getSightRadius() + 0.1f);
+                if (distSq <= enemySightSq)
+                {
+                    // Add the entity to those that the rogue is hiding from
+                    opposingEntitiesInSight.push_back(pEntity);
+                }
+                    
+            }
+            
+        }
+    }
+    
+    Vec2 destPos = friendlyObject->getPosition();
+
+    // If the rogue doesn't see any entities and is hidden.
+    if (opposingEntitiesInSight.size() <=  0 && isHidden())
+    {
+        // Approach the entity the rogue is hiding behind at the vector between the rogue and entity.
+        // Within the hiding distance.
+        Vec2 testVec =  m_Pos - friendlyObject->getPosition();
+        testVec.normalize();
+        destPos += testVec * ((friendlyObject->getStats().getSize() / 1.6f) + getStats().getHideDistance());
+        
+
+    }
+    // If the rogue doesn't see any enemies and is not hidden.
+    else if (opposingEntitiesInSight.size() <= 0)
+    {
+        // Hide behind the friendly entity.
+        if (m_bNorth)
+        {
+            destPos.y -= (friendlyObject->getStats().getSize() / 2.f) + getStats().getHideDistance();
+        }
+        else
+        {
+            destPos.y += (friendlyObject->getStats().getSize() / 2.f) + getStats().getHideDistance();
+        }
+    }
+    // Otherwise
+    else
+    {
+        // Get the average vector of all the entities the rogue is hiding from.
+        float sumX = 0.f;
+        float sumY = 0.f;
+        for (Entity* pEntity : opposingEntitiesInSight)
+        {
+            Vec2 newPos = friendlyObject->getPosition() - pEntity->getPosition();
+            sumX += newPos.x;
+            sumY += newPos.y;
+        }
+
+        Vec2 avgHidingVector = Vec2(sumX / (float) opposingEntitiesInSight.size(), sumY / (float) opposingEntitiesInSight.size());
+        avgHidingVector.normalize();
+
+        // Hide behind buildings at further distances to not hide in the building
+        if (m_bFollowingBuilding)
+        {
+            avgHidingVector = avgHidingVector * ((friendlyObject->getStats().getSize() / 1.6f) + getStats().getHideDistance());
+
+        } 
+        else
+        {
+            avgHidingVector = avgHidingVector * ((friendlyObject->getStats().getSize() / 2.f) + getStats().getHideDistance());
+
+        }
+
+        destPos += avgHidingVector;
+    }
+    return destPos;
+
+}
+
+
+bool Mob::friendlyGiantPreferRange()
+{
+    Player& friendlyPlayer = Game::get().getPlayer(m_bNorth);
+    float closestDist = getStats().perferGiantRange();
+    float closestDistSq = closestDist * closestDist;
+
+    // For each giant check if it is within the prefer giant range.
+    for (Entity* pEntity : friendlyPlayer.getMobs())
+    {
+        assert(pEntity->isNorth() == isNorth());
+        if (!pEntity->isDead())
+        {
+            if (pEntity->getStats().getMobType() == iEntityStats::MobType::Giant)
+            {
+                float distSq = m_Pos.distSqr(pEntity->getPosition());
+                if (distSq < closestDistSq)
+                {
+                    // If it is, set the giant to the target, and sent the flags.
+                    closestDistSq = distSq;
+                    m_pTarget = pEntity;
+                    m_eFriendlyGiant = pEntity;
+                    m_pWaypoint = NULL;
+                    m_bFollowingGiant = true;
+                    return true;
+
+                }
+            }
+        }
+    }
+    return false;
+
+}
 
 void Mob::move(float deltaTSec)
 {
@@ -261,10 +398,13 @@ void Mob::move(float deltaTSec)
     float closestDist = getStats().getSightRadius();
     float closestDistSq = closestDist * closestDist;
 
+    // If the mob is not hidden
     if (!isHidden())
     {
+        // Flags for conditions the rogue has get reset.
         isInSpringAttackRange = false;
         m_bFollowingGiant = false;
+        m_bFollowingBuilding = false;
 
         if (!!m_pTarget)
         {
@@ -284,9 +424,10 @@ void Mob::move(float deltaTSec)
             destPos = m_pTarget->getPosition();
             hasTarget = true;
         }
+        // If the mob type is a Rogue.
         else if (getStats().getMobType() == iEntityStats::MobType::Rogue)
         {
-
+            // Find the closest friendly Giant.
             for (Entity* pEntity : friendlyPlayer.getMobs())
             {
                 assert(pEntity->isNorth() == isNorth());
@@ -304,20 +445,56 @@ void Mob::move(float deltaTSec)
                             hasTarget = true;
                             m_pWaypoint = NULL;
                             m_bFollowingGiant = true;
-                            if (m_bNorth)
-                            {
-                                destPos.y -= (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
-                            }
-                            else
-                            {
-                                destPos.y += (pEntity->getStats().getSize() / 2.f) + getStats().getHideDistance();
-                            }
+
+                            /*destPos = getHidingLocation(pEntity);*/
                         }
                     }
                 }
             }
+            // Follow the closest Giant.
+            if (m_bFollowingGiant)
+            {
+                destPos = getHidingLocation(m_eFriendlyGiant);
+            }
+            // If the Rogue hasn't found a target yet
+            if (!hasTarget)
+            {
+                // Find the Closest Building.
+                float closestDistSq = INFINITY;
+                for (Entity* pEntity : friendlyPlayer.getBuildings())
+                {
+                    assert(pEntity->isNorth() == isNorth());
+                    if (!pEntity->isDead())
+                    {
+                        if (pEntity->getStats().getType() == iEntityStats::Building)
+                        {
+                            
+                            float distSq = m_Pos.distSqr(pEntity->getPosition());
+                            
+                            if (distSq < closestDistSq)
+                            {
+                                closestDistSq = distSq;
+                                destPos = pEntity->getPosition();
+                                m_pTarget = pEntity;
+                                m_eFriendlyBuilding = pEntity;
+                                hasTarget = true;
+                                m_pWaypoint = NULL;
+                                m_bFollowingBuilding = true;
+                                
+                                
+                            }
+                        }
+                    }
+                }
+                // Follow the closest building found.
+                if (m_bFollowingBuilding)
+                {
+                    destPos = getHidingLocation(m_eFriendlyBuilding);
+                }
+            }
 
         }
+        // If no target has been found, choose a waypoint.
         if (!hasTarget)
         {
             if (!m_pWaypoint)
@@ -328,10 +505,12 @@ void Mob::move(float deltaTSec)
 
 
         }
-    } 
+    }
+    // The mob is hiding. 
     else
     {
-        //printf("Spring attack?, %d\n", isEnemyInSpringAttackRange());
+        // If the enemy is in Spring attack range,
+        // set the Spring attack flag and attack the target.
         if (isEnemyInSpringAttackRange())
         {
             printf("Spring attack!\n");
@@ -340,20 +519,91 @@ void Mob::move(float deltaTSec)
             m_pWaypoint = NULL;
             destPos = m_pTarget->getPosition();
         }
+        // Else if the rogue is following a giant.
         else if (m_bFollowingGiant)
         {
-           // printf("following giant?, %d\n", m_bFollowingGiant);
-            destPos = m_eFriendlyGiant->getPosition();
-            if (m_bNorth)
+            // Get the hiding place around the giant.
+            destPos = getHidingLocation(m_eFriendlyGiant);
+
+        }
+        // Else if the rogue is following a build.
+        else if (m_bFollowingBuilding)
+        {
+            // If there is a giant in the range the rogue would prefer
+            if (friendlyGiantPreferRange())
             {
-                destPos.y -= (m_eFriendlyGiant->getStats().getSize() / 2.f) + getStats().getHideDistance();
+                // Follow the giant.
+                destPos = getHidingLocation(m_eFriendlyGiant);
             }
-            else
+            // Hide behind the building.
+            destPos = getHidingLocation(m_eFriendlyBuilding);
+        }
+        else
+        {
+            // If you are not hiding behind a building or a giant, find the closest giant
+            for (Entity* pEntity : friendlyPlayer.getMobs())
             {
-                destPos.y += (m_eFriendlyGiant->getStats().getSize() / 2.f) + getStats().getHideDistance();
+                assert(pEntity->isNorth() == isNorth());
+                if (!pEntity->isDead())
+                {
+                    if (pEntity->getStats().getMobType() == iEntityStats::MobType::Giant)
+                    {
+                        float distSq = m_Pos.distSqr(pEntity->getPosition());
+                        if (distSq < closestDistSq)
+                        {
+                            closestDistSq = distSq;
+                            destPos = pEntity->getPosition();
+                            m_pTarget = pEntity;
+                            m_eFriendlyGiant = pEntity;
+                            hasTarget = true;
+                            m_pWaypoint = NULL;
+                            m_bFollowingGiant = true;
+                        }
+                    }
+                }
+            }
+            // If the mob finds the closest giant, follow it.
+            if (m_bFollowingGiant)
+            {
+                destPos = getHidingLocation(m_eFriendlyGiant);
+            }
+
+            // If the mob doesn't find the giant, find the closest building.
+            if (!hasTarget)
+            {
+                for (Entity* pEntity : friendlyPlayer.getBuildings())
+                {
+                    assert(pEntity->isNorth() == isNorth());
+                    if (!pEntity->isDead())
+                    {
+                        if (pEntity->getStats().getType() == iEntityStats::Building)
+                        {
+                            float distSq = m_Pos.distSqr(pEntity->getPosition());
+                            if (distSq < closestDistSq)
+                            {
+                                closestDistSq = distSq;
+                                destPos = pEntity->getPosition();
+                                m_pTarget = pEntity;
+                                m_eFriendlyBuilding = pEntity;
+                                hasTarget = true;
+                                m_pWaypoint = NULL;
+                                m_bFollowingBuilding = true;
+                                
+                                
+                            }
+                        }
+                    }
+                }
+                // If the mob finds the building, 
+                // hide behind the building.
+                if (m_bFollowingBuilding)
+                {
+                    destPos = getHidingLocation(m_eFriendlyBuilding);
+                }
             }
 
         }
+        
         
 
     }
@@ -409,46 +659,6 @@ void Mob::move(float deltaTSec)
     }
 }
 
-const Vec2* Mob::pickRogueWaypoint()
-{
-    float smallestDistSq = FLT_MAX;
-    const Vec2* pClosest = NULL;
-
-    for (const Vec2& pt : Game::get().getWaypoints())
-    {
-        
-        if (m_bNorth)
-        {
-            if (pt.y < 5.f)
-            {
-                float distSq = m_Pos.distSqr(pt);
-                if (distSq < smallestDistSq) {
-                    smallestDistSq = distSq;
-                    pClosest = &pt;
-                }
-            }
-                
-            //destPos.y -= (pEntity->getStats().getSize() / 2.f) + 0.5f;
-        }
-        else
-        {
-            if (pt.y > 25.5f)
-            {
-                //printf("waypoints x: %f, y: %f\n", pt.x, pt.y);
-
-
-                float distSq = m_Pos.distSqr(pt);
-                if (distSq < smallestDistSq) {
-                    smallestDistSq = distSq;
-                    pClosest = &pt;
-                }
-            }
-
-               
-        }
-       }
-        return pClosest;
-}
 
 const Vec2* Mob::pickWaypoint()
 {
@@ -463,11 +673,7 @@ const Vec2* Mob::pickWaypoint()
 
     for (const Vec2& pt : Game::get().getWaypoints())
     {
-        if (getStats().getMobType() == iEntityStats::MobType::Rogue)
-        {
-            pClosest = pickRogueWaypoint();
-        }
-        else
+
         {
             // Filter out any waypoints that are behind (or barely in front of) us.
             // NOTE: (0, 0) is the top left corner of the screen

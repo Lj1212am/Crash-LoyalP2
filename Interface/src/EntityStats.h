@@ -85,12 +85,15 @@ public:
     virtual TargetType getTargetType() const = 0;
     virtual float getAttackRange() const = 0;
     virtual DamageType getDamageType() const = 0;
-    virtual TargetType getType() const = 0;
     virtual int getDamage() const = 0;
     virtual float getAttackTime() const = 0;
     virtual float getSightRadius() const = 0;
+    
     virtual const char* getName() const = 0;
     virtual const char* getDisplayLetter() const = 0;
+
+    // Gets the type of the Target, Mob or Building.
+    virtual TargetType getType() const = 0;
 
     // Project 2: Note these new functions.  You can use them to get stats for the Rogue,
     // but (with the exception of canSpringAttack()) you should only call them if the 
@@ -103,6 +106,9 @@ public:
     virtual int getSpringAttackDamage() const{ assert(false && "Mob is not a rogue!"); return 0; }
     virtual float perferGiantRange() const { assert(false && "Mob is not a rogue!"); return 0.f; }
     virtual float getHideDistance() const { assert(false && "Mob is not a rogue!"); return 0; }
+
+    // The amount of time in seconds it takes for the Rogue to hide.
+    virtual float timeToHide() const { assert(false && "Mob is not a rogue!"); return 0; }
 };
 
 class iEntityStats_Mob : public iEntityStats

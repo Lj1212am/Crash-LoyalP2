@@ -98,15 +98,6 @@ void Game::buildWaypoints()
     {
         addFourWaypoints(Vec2(LEFT_BRIDGE_CENTER_X, y));
     }
-
-    // iEntityStats::Rogue::getHideDistance() ) );
-    /*m_Waypoints.push_back(Vec2(KingX, SouthKingY + (kingSize / 2.f) + 0.5f));
-    m_Waypoints.push_back(Vec2(PrincessLeftX, SouthPrincessY + (princessSize / 2.f) + 0.5f));
-    m_Waypoints.push_back(Vec2(PrincessRightX, SouthPrincessY + (princessSize / 2.f) + 0.5f));
-    m_Waypoints.push_back(Vec2(KingX, NorthKingY - (kingSize / 2.f) - 0.5f));
-    m_Waypoints.push_back(Vec2(PrincessLeftX, NorthPrincessY - (princessSize / 2.f) - 0.5f));
-    m_Waypoints.push_back(Vec2(PrincessRightX, NorthPrincessY - (princessSize / 2.f) - 0.5f));*/
-
     
 }
 

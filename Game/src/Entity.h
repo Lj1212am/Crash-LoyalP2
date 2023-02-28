@@ -55,6 +55,8 @@ public:
 protected:
     void pickTarget();
     bool targetInRange();
+
+    // Flag whether the entity has a target in spring attack range
     bool isInSpringAttackRange = false;
 
 protected:
@@ -62,6 +64,7 @@ protected:
     bool m_bNorth;
     int m_Health;
     Vec2 m_Pos;
+    // Entity has an individual id.
     int id;
     
 

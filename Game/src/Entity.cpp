@@ -49,11 +49,10 @@ void Entity::tick(float deltaTSec)
     m_TimeSinceAttack += deltaTSec;
     int damage;
 
-    
-
-    //printf("damage: %d\n", damage);
+   
     if (targetInRange() && (m_TimeSinceAttack > m_Stats.getAttackTime()))
     {
+        // If the Enitity is Spring Attacking, do the Spring Attack damage.
         if (isInSpringAttackRange)
         {
 
@@ -64,6 +63,7 @@ void Entity::tick(float deltaTSec)
         {
             damage = m_Stats.getDamage();
         }
+
         char buff[200];
         snprintf(buff, 200, "%s %s attacks %s %s for %d damage.\n",
                  m_bNorth ? "North" : "South",
@@ -106,7 +106,8 @@ void Entity::pickTarget()
         for (Entity* pEntity : opposingPlayer.getBuildings())
         {
             assert(pEntity->isNorth() != isNorth());
-            if (!pEntity->isDead())
+            // Cannot choose targets that are hiding.
+            if (!pEntity->isDead() && !pEntity->isHidden())
             {
                 float distSq = m_Pos.distSqr(pEntity->getPosition());
                 if (distSq < closestDistSq)
@@ -123,7 +124,9 @@ void Entity::pickTarget()
         for (Entity* pEntity : opposingPlayer.getMobs())
         {
             assert(pEntity->isNorth() != isNorth());
-            if (!pEntity->isDead())
+
+            // Cannot choose targets that are hiding.
+            if (!pEntity->isDead() && !pEntity->isHidden())
             {
                 float distSq = m_Pos.distSqr(pEntity->getPosition());
                 if (distSq < closestDistSq)

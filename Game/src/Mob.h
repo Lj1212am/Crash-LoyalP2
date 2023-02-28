@@ -42,18 +42,45 @@ protected:
     const Vec2* pickWaypoint();
     Mob* checkCollision();
     void processCollision(Mob* otherMob, float deltaTSec);
+    
+    // This function checks whether a mob is currently hiding.
+    // A mob is hiding if all the opposing entities can't see it.
     bool isHiding() const;
+    
+    // A function that checks with the mob is obstructed from the entity by a tower or Giant.
     bool isObstructedByGiantOrTower(Entity* e, Player& friendlyPlayer) const;
+
+    // Checks if a line intersects with a square.
     bool lineSquareIntersection(Vec2 start, float size, Vec2 obj_pos) const;
-    const Vec2* pickRogueWaypoint();
+
+    // Function to determing if the mob  has a target in spring attack range.
     bool isEnemyInSpringAttackRange();
 
+    // Function to determing if the mob would prefer the Giant in Range 
+    // compared to a tower.
+    bool friendlyGiantPreferRange();
+
+    // Function to get the hiding location that is around the object the rogue is hiding behind.
+    Vec2 getHidingLocation(Entity* friendlyObject);
 
 private:
     const Vec2* m_pWaypoint;
+
+    // Counts amount of ticks since last hidden.
     int m_ticksSinceHidden = 0;
+
+    // Flag for if the mob is following a giant.
     bool m_bFollowingGiant = false;
+
+    // The friendly giant the mob is following.
     Entity* m_eFriendlyGiant;
+
+    // Flag for if the mob is following a building.
+    bool m_bFollowingBuilding = false;
+
+
+    // The friendly building the mob is following.
+    Entity* m_eFriendlyBuilding;
 
     
 };
