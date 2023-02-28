@@ -56,8 +56,8 @@ void Graphics::resetFrame() {
 void Graphics::drawMob(Entity* m)
 {
     // Project 2: Comment this out if you want Rogues to be visible for debugging
-    //if (m->isNorth() && m->isHidden())
-    //    return;
+    if (m->isNorth() && m->isHidden())
+        return;
 
 	int alpha = healthToAlpha(m);
 
