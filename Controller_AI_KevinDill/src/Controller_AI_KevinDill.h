@@ -67,4 +67,5 @@ private:
     bool checkElixirAndDeployGiantAndRogue();
     bool checkElixirAndDeployLanePressure();
     bool checkElixirAndDefendCounterAttack();
+    bool checkElixirAndDeployGiantForRogueRetrieval();
 };

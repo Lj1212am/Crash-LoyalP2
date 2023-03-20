@@ -29,10 +29,6 @@
 
 
 
-float kx = rand() % 2 == 0 ? LEFT_BRIDGE_CENTER_X : RIGHT_BRIDGE_CENTER_X;
-static const Vec2 ksGiantPos(kx, RIVER_TOP_Y - 0.5f);
-static const Vec2 ksRoguePos(kx, RIVER_TOP_Y - 1.5f);
-static const Vec2 ksArcherPos(kx, 0.f);
 
 Controller_AI_KevinDill::Controller_AI_KevinDill() : m_behaviorTree(createBehaviorTree())
 {
@@ -42,6 +38,11 @@ Controller_AI_KevinDill::Controller_AI_KevinDill() : m_behaviorTree(createBehavi
 Controller_AI_KevinDill::Node Controller_AI_KevinDill::createBehaviorTree()
 {
     Node root(NodeType::Selector);
+
+
+    Node rogueRetrievalSequence(NodeType::Sequence);
+    rogueRetrievalSequence.children.emplace_back(NodeType::Action);
+    rogueRetrievalSequence.children.back().action = &Controller_AI_KevinDill::checkElixirAndDeployGiantForRogueRetrieval;
 
     Node placeMobsSequence(NodeType::Sequence);
     placeMobsSequence.children.emplace_back(NodeType::Action);
@@ -60,9 +61,11 @@ Controller_AI_KevinDill::Node Controller_AI_KevinDill::createBehaviorTree()
     defendCounterAttackSequence.children.back().action = &Controller_AI_KevinDill::checkElixirAndDefendCounterAttack;
 
     root.children.push_back(defendCounterAttackSequence);
+    root.children.push_back(rogueRetrievalSequence);
     root.children.push_back(placeMobsSequence);
     root.children.push_back(giantRogueSequence);
     root.children.push_back(lanePressureSequence);
+
     return root;
 }
 
@@ -106,6 +109,11 @@ bool Controller_AI_KevinDill::checkElixirAndPlaceMobs()
     // wait for elixir
     if (m_pPlayer->getElixir() >= 9)
     {
+        float kx = rand() % 2 == 0 ? LEFT_BRIDGE_CENTER_X : RIGHT_BRIDGE_CENTER_X;
+        static const Vec2 ksGiantPos(kx, RIVER_TOP_Y - 0.5f);
+        static const Vec2 ksRoguePos(kx, RIVER_TOP_Y - 1.5f);
+        static const Vec2 ksArcherPos(kx, 0.f);
+
         // convert the positions from player space to game space
         bool isNorth = m_pPlayer->isNorth();
         Vec2 giantPos_Game = ksGiantPos.Player2Game(isNorth);
@@ -165,7 +173,7 @@ bool Controller_AI_KevinDill::checkElixirAndDeployLanePressure()
     const iEntityStats& swordmanStats = iEntityStats::getStats(iEntityStats::Swordsman);
 
     float totalCost = 2 *  archerStats.getElixirCost() +   swordmanStats.getElixirCost();
-
+    
 
     bool isNorth = m_pPlayer->isNorth();
 
@@ -179,6 +187,8 @@ bool Controller_AI_KevinDill::checkElixirAndDeployLanePressure()
         {
             float x = rand() % 2 == 0 ? LEFT_BRIDGE_CENTER_X : RIGHT_BRIDGE_CENTER_X;
             float yOffset = m_pPlayer->isNorth() ? RIVER_TOP_Y - 2.0f : RIVER_BOT_Y + 2.0f;
+
+            static const Vec2 ksArcherPos(x, 0.f);
 
             Vec2 archerPos_Game = ksArcherPos.Player2Game(isNorth);
             archerPos_Game.x = x;
@@ -234,6 +244,38 @@ bool Controller_AI_KevinDill::checkElixirAndDefendCounterAttack()
                     Vec2 spawnPos = closestTowerPos + Vec2(unitSpawnOffset, 0.f);
                     m_pPlayer->placeMob(iEntityStats::Swordsman, spawnPos);
                     return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+bool Controller_AI_KevinDill::checkElixirAndDeployGiantForRogueRetrieval()
+{
+    const float rogueHideDistance = iEntityStats::getStats(iEntityStats::Rogue).getHideDistance();
+    const float giantCost = iEntityStats::getStats(iEntityStats::Giant).getElixirCost();
+
+    if (m_pPlayer->getElixir() >= giantCost)
+    {
+        
+        for (int i = 0; i < m_pPlayer->getNumMobs(); ++i)
+        {
+            iPlayer::EntityData mob = m_pPlayer->getMob(i);
+            if (mob.m_Stats.getMobType() == iEntityStats::Rogue)
+            {
+                for (int j = 0; j < m_pPlayer->getNumBuildings(); ++j)
+                {
+                    iPlayer::EntityData building = m_pPlayer->getBuilding(j);
+                    float distance = (mob.m_Position - building.m_Position).length();
+                    if (distance <= (0.5 + rogueHideDistance + building.m_Stats.getSize() / 2.f))
+                    {
+                       
+                        Vec2 giantPos = mob.m_Position + Vec2(1.5f, 0.0f);
+                        m_pPlayer->placeMob(iEntityStats::Giant, giantPos);
+                        return true;
+                    }
                 }
             }
         }
