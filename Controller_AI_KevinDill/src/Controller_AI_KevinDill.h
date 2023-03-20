@@ -23,13 +23,30 @@
 #pragma once
 
 #include "iController.h"
-
+#include <vector>
 
 
 class Controller_AI_KevinDill : public iController
 {
 public:
-    Controller_AI_KevinDill() {}
+
+    enum class NodeType
+    {
+        Selector,
+        Sequence,
+        Action
+    };
+
+    struct Node
+    {
+        NodeType type;
+        std::vector<Node> children;
+        bool (Controller_AI_KevinDill::* action)();
+
+        Node(NodeType t) : type(t), action(nullptr) {}
+    };
+
+    Controller_AI_KevinDill();
     virtual ~Controller_AI_KevinDill() {}
 
     void tick(float deltaTSec);
@@ -39,4 +56,15 @@ public:
 
 private:
     int m_foo = 0;
+
+    Node m_behaviorTree;
+
+    Node createBehaviorTree();
+    bool traverseTree(const Node& node);
+
+    // Define your custom action functions here
+    bool checkElixirAndPlaceMobs();
+    bool checkElixirAndDeployGiantAndRogue();
+    bool checkElixirAndDeployLanePressure();
+    bool checkElixirAndDefendCounterAttack();
 };
