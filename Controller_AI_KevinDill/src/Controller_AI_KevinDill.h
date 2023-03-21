@@ -65,6 +65,7 @@ private:
     // Define your custom action functions here
     bool checkElixirAndPlaceMobs();
     bool checkElixirAndDeployGiantAndRogue();
+    void getLaneTroopCounts(int& leftLaneCount, int& rightLaneCount);
     bool checkElixirAndDeployLanePressure();
     bool checkElixirAndDefendCounterAttack();
     bool checkElixirAndDeployGiantForRogueRetrieval();

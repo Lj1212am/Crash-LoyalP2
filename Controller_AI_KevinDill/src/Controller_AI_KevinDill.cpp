@@ -166,6 +166,25 @@ bool Controller_AI_KevinDill::checkElixirAndDeployGiantAndRogue()
     return false;
 }
 
+void Controller_AI_KevinDill::getLaneTroopCounts(int& leftLaneCount, int& rightLaneCount)
+{
+    leftLaneCount = 0;
+    rightLaneCount = 0;
+
+    for (int i = 0; i < m_pPlayer->getNumMobs(); ++i)
+    {
+        iPlayer::EntityData mob = m_pPlayer->getMob(i);
+        if (mob.m_Position.x < GAME_GRID_WIDTH / 2)
+        {
+            leftLaneCount++;
+        }
+        else
+        {
+            rightLaneCount++;
+        }
+    }
+}
+
 bool Controller_AI_KevinDill::checkElixirAndDeployLanePressure()
 {
 
@@ -185,7 +204,12 @@ bool Controller_AI_KevinDill::checkElixirAndDeployLanePressure()
         printf("checking for lane pressure probablitiy score: %d\n", probability);
         if (probability < 40) // 40% chance to deploy lane pressure units
         {
-            float x = rand() % 2 == 0 ? LEFT_BRIDGE_CENTER_X : RIGHT_BRIDGE_CENTER_X;
+
+            int leftLaneCount, rightLaneCount;
+            getLaneTroopCounts(leftLaneCount, rightLaneCount);
+
+            float x = leftLaneCount < rightLaneCount ? LEFT_BRIDGE_CENTER_X : RIGHT_BRIDGE_CENTER_X;
+            //float x = rand() % 2 == 0 ? LEFT_BRIDGE_CENTER_X : RIGHT_BRIDGE_CENTER_X;
             float yOffset = m_pPlayer->isNorth() ? RIVER_TOP_Y - 2.0f : RIVER_BOT_Y + 2.0f;
 
             static const Vec2 ksArcherPos(x, 0.f);
