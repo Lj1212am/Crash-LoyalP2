@@ -22,6 +22,9 @@
 
 #pragma once
 
+#include <iostream>
+#include <sstream>
+#include <map>
 #include "iController.h"
 #include <vector>
 
@@ -57,6 +60,8 @@ public:
     Controller_AI_KevinDill();
     virtual ~Controller_AI_KevinDill() {}
 
+    // A method to learn behavior from text input.
+    void learnBehavior(const std::string& behaviorText);
 
     void tick(float deltaTSec);
 
@@ -92,4 +97,7 @@ private:
 
     // If the AI has rogues hiding behind towers, it will place a Giant in range for the Rogues to follow.
     bool DeployGiantForRogueRetrieval();
+
+    // A method to parse natural text and generate a behavior tree.
+    Node parseNaturalText(const std::string& behaviorText);
 };

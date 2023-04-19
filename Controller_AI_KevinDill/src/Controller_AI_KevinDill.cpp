@@ -34,6 +34,19 @@ Controller_AI_KevinDill::Controller_AI_KevinDill() : m_behaviorTree(createBehavi
 {
     // Initializes random seed when creating controller
     srand(time(0));
+    while (true)
+    {
+        std::cout << "Enter a new behavior (type 'quit' to exit): ";
+        std::string input;
+        std::getline(std::cin, input);
+
+        if (input == "quit")
+        {
+            break;
+        }
+
+        learnBehavior(input);
+    }
 }
 
 Controller_AI_KevinDill::Node Controller_AI_KevinDill::createBehaviorTree()
@@ -356,4 +369,50 @@ bool Controller_AI_KevinDill::DeployGiantForRogueRetrieval()
     }
 
     return false;
+}
+
+Controller_AI_KevinDill::Node Controller_AI_KevinDill::parseNaturalText(const std::string& behaviorText)
+{
+    std::istringstream iss(behaviorText);
+    std::string word;
+    Node currentNode(NodeType::Selector);
+
+    // This map associates natural text commands with corresponding AI actions
+    std::map<std::string, bool (Controller_AI_KevinDill::*)()> actionMap = {
+        {"PlaceMobs", &Controller_AI_KevinDill::PlaceMobs},
+        {"DeployArchersandSwordsman", &Controller_AI_KevinDill::DeployArchersandSwordsman},
+        {"DeployLanePressure", &Controller_AI_KevinDill::DeployLanePressure},
+        {"DefendCounterAttack", &Controller_AI_KevinDill::DefendCounterAttack},
+        {"DeployGiantForRogueRetrieval", &Controller_AI_KevinDill::DeployGiantForRogueRetrieval}
+    };
+
+    while (iss >> word)
+    {
+        if (word == "if")
+        {
+            currentNode.type = NodeType::Selector;
+        }
+        else if (word == "and")
+        {
+            currentNode.type = NodeType::Sequence;
+        }
+        else
+        {
+            auto it = actionMap.find(word);
+            if (it != actionMap.end())
+            {
+                Node actionNode(NodeType::Action);
+                actionNode.action = it->second;
+                currentNode.children.push_back(actionNode);
+            }
+        }
+    }
+
+    return currentNode;
+}
+
+void Controller_AI_KevinDill::learnBehavior(const std::string& behaviorText)
+{
+    Node newBehaviorTree = parseNaturalText(behaviorText);
+    m_behaviorTree = newBehaviorTree;
 }
