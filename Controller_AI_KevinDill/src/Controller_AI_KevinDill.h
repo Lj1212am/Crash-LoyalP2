@@ -30,6 +30,10 @@ class Controller_AI_KevinDill : public iController
 {
 public:
 
+    // Three types of Nodes in a behavior tree
+    // Selector :: if
+    // Sequence :: and
+    // Action :: leaf node function
     enum class NodeType
     {
         Selector,
@@ -37,17 +41,22 @@ public:
         Action
     };
 
+    // Each node is made up of a type
+    // a list of it's children
+    // and a pointer to a function the represents an action
     struct Node
     {
         NodeType type;
         std::vector<Node> children;
         bool (Controller_AI_KevinDill::* action)();
 
+        // Node constructor
         Node(NodeType t) : type(t), action(nullptr) {}
     };
 
     Controller_AI_KevinDill();
     virtual ~Controller_AI_KevinDill() {}
+
 
     void tick(float deltaTSec);
 
@@ -57,16 +66,30 @@ public:
 private:
     int m_foo = 0;
 
+    // The Ai's Behavior Tree.
     Node m_behaviorTree;
-
+    
+    // Function that creates the behavior tree for the AI.
     Node createBehaviorTree();
+
+    // Function that traverses the behavior tree every tick.
     bool traverseTree(const Node& node);
 
-    // Define your custom action functions here
-    bool checkElixirAndPlaceMobs();
-    bool checkElixirAndDeployGiantAndRogue();
-    void getLaneTroopCounts(int& leftLaneCount, int& rightLaneCount);
-    bool checkElixirAndDeployLanePressure();
-    bool checkElixirAndDefendCounterAttack();
-    bool checkElixirAndDeployGiantForRogueRetrieval();
+    // Places the initial mobs, keeping the functionality from the original AI.
+    bool PlaceMobs();
+
+    // Deploys two Archers and a Swordsman to the lane with the most enemy units.
+    bool DeployArchersandSwordsman();
+
+    // Counts the amount of troops in each side of the map, either friendly or not.
+    void getLaneTroopCounts(int& leftLaneCount, int& rightLaneCount, bool opp);
+
+    // Places a Giant and a Rogue in the lane with the least amount of friendly troops for lane pressure.
+    bool DeployLanePressure();
+
+    // Defends attacks on the towers with swordsmen.
+    bool DefendCounterAttack();
+
+    // If the AI has rogues hiding behind towers, it will place a Giant in range for the Rogues to follow.
+    bool DeployGiantForRogueRetrieval();
 };
