@@ -25,6 +25,7 @@
 #include <iostream>
 #include <sstream>
 #include <map>
+#include <algorithm>
 #include "iController.h"
 #include <vector>
 

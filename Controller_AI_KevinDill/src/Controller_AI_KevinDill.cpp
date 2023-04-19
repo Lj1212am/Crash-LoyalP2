@@ -379,15 +379,18 @@ Controller_AI_KevinDill::Node Controller_AI_KevinDill::parseNaturalText(const st
 
     // This map associates natural text commands with corresponding AI actions
     std::map<std::string, bool (Controller_AI_KevinDill::*)()> actionMap = {
-        {"PlaceMobs", &Controller_AI_KevinDill::PlaceMobs},
-        {"DeployArchersandSwordsman", &Controller_AI_KevinDill::DeployArchersandSwordsman},
-        {"DeployLanePressure", &Controller_AI_KevinDill::DeployLanePressure},
-        {"DefendCounterAttack", &Controller_AI_KevinDill::DefendCounterAttack},
-        {"DeployGiantForRogueRetrieval", &Controller_AI_KevinDill::DeployGiantForRogueRetrieval}
+        {"placemobs", &Controller_AI_KevinDill::PlaceMobs},
+        {"deployarchersandswordsman", &Controller_AI_KevinDill::DeployArchersandSwordsman},
+        {"deploylanepressure", &Controller_AI_KevinDill::DeployLanePressure},
+        {"defendcounterattack", &Controller_AI_KevinDill::DefendCounterAttack},
+        {"deploygiantforrogueretrieval", &Controller_AI_KevinDill::DeployGiantForRogueRetrieval}
     };
 
     while (iss >> word)
     {
+        // Convert the word to lowercase
+        std::transform(word.begin(), word.end(), word.begin(), [](unsigned char c) { return std::tolower(c); });
+
         if (word == "if")
         {
             currentNode.type = NodeType::Selector;
@@ -398,18 +401,23 @@ Controller_AI_KevinDill::Node Controller_AI_KevinDill::parseNaturalText(const st
         }
         else
         {
-            auto it = actionMap.find(word);
-            if (it != actionMap.end())
+            // Check if the word is a substring of any key in the actionMap
+            for (const auto& pair : actionMap)
             {
-                Node actionNode(NodeType::Action);
-                actionNode.action = it->second;
-                currentNode.children.push_back(actionNode);
+                if (pair.first.find(word) != std::string::npos)
+                {
+                    Node actionNode(NodeType::Action);
+                    actionNode.action = pair.second;
+                    currentNode.children.push_back(actionNode);
+                    break;
+                }
             }
         }
     }
 
     return currentNode;
 }
+
 
 void Controller_AI_KevinDill::learnBehavior(const std::string& behaviorText)
 {
