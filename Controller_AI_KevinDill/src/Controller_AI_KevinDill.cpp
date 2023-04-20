@@ -32,6 +32,15 @@
 
 Controller_AI_KevinDill::Controller_AI_KevinDill() : m_behaviorTree(createBehaviorTree())
 {
+
+    actionMap = {
+        {"placemobs", &Controller_AI_KevinDill::PlaceMobs},
+        {"deployarchersandswordsman", &Controller_AI_KevinDill::DeployArchersandSwordsman},
+        {"deploylanepressure", &Controller_AI_KevinDill::DeployLanePressure},
+        {"defendcounterattack", &Controller_AI_KevinDill::DefendCounterAttack},
+        {"deploygiantforrogueretrieval", &Controller_AI_KevinDill::DeployGiantForRogueRetrieval}
+    };
+
     // Initializes random seed when creating controller
     srand(time(0));
     while (true)
@@ -375,16 +384,9 @@ Controller_AI_KevinDill::Node Controller_AI_KevinDill::parseNaturalText(const st
 {
     std::istringstream iss(behaviorText);
     std::string word;
-    Node currentNode(NodeType::Selector);
-
-    // This map associates natural text commands with corresponding AI actions
-    std::map<std::string, bool (Controller_AI_KevinDill::*)()> actionMap = {
-        {"placemobs", &Controller_AI_KevinDill::PlaceMobs},
-        {"deployarchersandswordsman", &Controller_AI_KevinDill::DeployArchersandSwordsman},
-        {"deploylanepressure", &Controller_AI_KevinDill::DeployLanePressure},
-        {"defendcounterattack", &Controller_AI_KevinDill::DefendCounterAttack},
-        {"deploygiantforrogueretrieval", &Controller_AI_KevinDill::DeployGiantForRogueRetrieval}
-    };
+    Node root(NodeType::Selector);
+    std::stack<std::pair<Node*, bool>> nodeStack;
+    nodeStack.push({ &root, false });
 
     while (iss >> word)
     {
@@ -393,11 +395,26 @@ Controller_AI_KevinDill::Node Controller_AI_KevinDill::parseNaturalText(const st
 
         if (word == "if")
         {
-            currentNode.type = NodeType::Selector;
+            Node selectorNode(NodeType::Selector);
+            nodeStack.top().first->children.push_back(selectorNode);
+            nodeStack.push({ &nodeStack.top().first->children.back(), false });
         }
         else if (word == "and")
         {
-            currentNode.type = NodeType::Sequence;
+            Node sequenceNode(NodeType::Sequence);
+            nodeStack.top().first->children.push_back(sequenceNode);
+            nodeStack.push({ &nodeStack.top().first->children.back(), false });
+        }
+        else if (word == "end")
+        {
+            if (!nodeStack.empty())
+            {
+                nodeStack.top().second = true;
+                while (!nodeStack.empty() && nodeStack.top().second)
+                {
+                    nodeStack.pop();
+                }
+            }
         }
         else
         {
@@ -408,19 +425,65 @@ Controller_AI_KevinDill::Node Controller_AI_KevinDill::parseNaturalText(const st
                 {
                     Node actionNode(NodeType::Action);
                     actionNode.action = pair.second;
-                    currentNode.children.push_back(actionNode);
+                    nodeStack.top().first->children.push_back(actionNode);
                     break;
                 }
             }
         }
     }
 
-    return currentNode;
+    return root;
 }
 
+
+
+
+
+
+
+
+
+std::string Controller_AI_KevinDill::treeToString(const Node& node, int depth) const
+{
+    std::string output;
+
+    for (int i = 0; i < depth; i++)
+        output += "  ";
+
+    switch (node.type)
+    {
+    case NodeType::Selector:
+        output += "Selector\n";
+        break;
+    case NodeType::Sequence:
+        output += "Sequence\n";
+        break;
+    case NodeType::Action:
+        output += "Action: ";
+
+        for (const auto& pair : actionMap)
+        {
+            if (node.action == pair.second)
+            {
+                output += pair.first;
+                break;
+            }
+        }
+
+        output += "\n";
+        break;
+    }
+
+    for (const auto& child : node.children)
+        output += treeToString(child, depth + 1);
+
+    return output;
+}
 
 void Controller_AI_KevinDill::learnBehavior(const std::string& behaviorText)
 {
     Node newBehaviorTree = parseNaturalText(behaviorText);
     m_behaviorTree = newBehaviorTree;
+    std::string treeRepresentation = treeToString(m_behaviorTree, 0);
+    std::cout << treeRepresentation;
 }

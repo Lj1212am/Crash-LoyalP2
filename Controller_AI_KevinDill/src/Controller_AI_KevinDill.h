@@ -26,6 +26,7 @@
 #include <sstream>
 #include <map>
 #include <algorithm>
+#include <stack>
 #include "iController.h"
 #include <vector>
 
@@ -72,6 +73,9 @@ public:
 private:
     int m_foo = 0;
 
+    // This map associates natural text commands with corresponding AI actions.
+    std::map<std::string, bool (Controller_AI_KevinDill::*)()> actionMap;
+
     // The Ai's Behavior Tree.
     Node m_behaviorTree;
     
@@ -101,4 +105,7 @@ private:
 
     // A method to parse natural text and generate a behavior tree.
     Node parseNaturalText(const std::string& behaviorText);
+
+    //TODO: Define
+    std::string treeToString(const Node& node, int depth) const;
 };
