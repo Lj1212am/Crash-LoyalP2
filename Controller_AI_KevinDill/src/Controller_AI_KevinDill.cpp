@@ -395,15 +395,29 @@ Controller_AI_KevinDill::Node Controller_AI_KevinDill::parseNaturalText(const st
 
         if (word == "if")
         {
-            Node selectorNode(NodeType::Selector);
-            nodeStack.top().first->children.push_back(selectorNode);
-            nodeStack.push({ &nodeStack.top().first->children.back(), false });
+            if (nodeStack.top().first->type == NodeType::Action || !nodeStack.top().first->children.empty())
+            {
+                Node selectorNode(NodeType::Selector);
+                nodeStack.top().first->children.push_back(selectorNode);
+                nodeStack.push({ &nodeStack.top().first->children.back(), false });
+            }
+            else
+            {
+                nodeStack.top().first->type = NodeType::Selector;
+            }
         }
         else if (word == "and")
         {
-            Node sequenceNode(NodeType::Sequence);
-            nodeStack.top().first->children.push_back(sequenceNode);
-            nodeStack.push({ &nodeStack.top().first->children.back(), false });
+            if (nodeStack.top().first->type == NodeType::Action || !nodeStack.top().first->children.empty())
+            {
+                Node sequenceNode(NodeType::Sequence);
+                nodeStack.top().first->children.push_back(sequenceNode);
+                nodeStack.push({ &nodeStack.top().first->children.back(), false });
+            }
+            else
+            {
+                nodeStack.top().first->type = NodeType::Sequence;
+            }
         }
         else if (word == "end")
         {
@@ -436,11 +450,7 @@ Controller_AI_KevinDill::Node Controller_AI_KevinDill::parseNaturalText(const st
 }
 
 
-
-
-
-
-
+//if if deployarchersandswordsman endand defendcounterattack if placemobs
 
 
 std::string Controller_AI_KevinDill::treeToString(const Node& node, int depth) const
