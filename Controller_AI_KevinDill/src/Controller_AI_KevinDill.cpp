@@ -385,50 +385,57 @@ Controller_AI_KevinDill::Node Controller_AI_KevinDill::parseNaturalText(const st
     std::istringstream iss(behaviorText);
     std::string word;
     Node root(NodeType::Selector);
-    std::stack<std::pair<Node*, bool>> nodeStack;
-    nodeStack.push({ &root, false });
+    std::stack<Node*> nodeStack;
+    nodeStack.push(&root);
+    bool isFirstWord = true;
+
 
     while (iss >> word)
     {
         // Convert the word to lowercase
         std::transform(word.begin(), word.end(), word.begin(), [](unsigned char c) { return std::tolower(c); });
 
-        if (word == "if")
+        if (isFirstWord)
         {
-            if (nodeStack.top().first->type == NodeType::Action || !nodeStack.top().first->children.empty())
+            if (word == "if")
             {
-                Node selectorNode(NodeType::Selector);
-                nodeStack.top().first->children.push_back(selectorNode);
-                nodeStack.push({ &nodeStack.top().first->children.back(), false });
+                root.type = NodeType::Selector;
+
+            }
+            else if (word == "and")
+            {
+                root.type = NodeType::Sequence;
+
             }
             else
             {
-                nodeStack.top().first->type = NodeType::Selector;
+                root.type = NodeType::Selector;
             }
+            //nodeStack.push(&root);
+            isFirstWord = false;
+            if (word == "if" || word == "and")
+            {
+                continue;
+            }
+        }
+        
+        if (word == "if")
+        {
+            Node selectorNode(NodeType::Selector);
+            nodeStack.top()->children.push_back(selectorNode);
+            nodeStack.push(&nodeStack.top()->children.back());
         }
         else if (word == "and")
         {
-            if (nodeStack.top().first->type == NodeType::Action || !nodeStack.top().first->children.empty())
-            {
-                Node sequenceNode(NodeType::Sequence);
-                nodeStack.top().first->children.push_back(sequenceNode);
-                nodeStack.push({ &nodeStack.top().first->children.back(), false });
-            }
-            else
-            {
-                nodeStack.top().first->type = NodeType::Sequence;
-            }
+            Node sequenceNode(NodeType::Sequence);
+            sequenceNode.children.push_back(nodeStack.top()->children.back());
+            nodeStack.top()->children.pop_back();
+            nodeStack.top()->children.push_back(sequenceNode);
+            nodeStack.push(&nodeStack.top()->children.back());
         }
         else if (word == "end")
         {
-            if (!nodeStack.empty())
-            {
-                nodeStack.top().second = true;
-                while (!nodeStack.empty() && nodeStack.top().second)
-                {
-                    nodeStack.pop();
-                }
-            }
+            nodeStack.pop();
         }
         else
         {
@@ -439,7 +446,7 @@ Controller_AI_KevinDill::Node Controller_AI_KevinDill::parseNaturalText(const st
                 {
                     Node actionNode(NodeType::Action);
                     actionNode.action = pair.second;
-                    nodeStack.top().first->children.push_back(actionNode);
+                    nodeStack.top()->children.push_back(actionNode);
                     break;
                 }
             }
@@ -450,7 +457,7 @@ Controller_AI_KevinDill::Node Controller_AI_KevinDill::parseNaturalText(const st
 }
 
 
-//if if deployarchersandswordsman endand defendcounterattack if placemobs
+//if deployArchers and deploySwordsman end if defend and counterattack end if placeMobs end
 
 
 std::string Controller_AI_KevinDill::treeToString(const Node& node, int depth) const
