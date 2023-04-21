@@ -103,9 +103,9 @@ private:
     // If the AI has rogues hiding behind towers, it will place a Giant in range for the Rogues to follow.
     bool DeployGiantForRogueRetrieval();
 
-    // A method to parse natural text and generate a behavior tree.
+    // This function takes a natural language input describing a behavior and constructs a behavior tree based on the given text.
     Node parseNaturalText(const std::string& behaviorText);
 
-    //TODO: Define
+    // Prints out the construction of a behavior tree.
     std::string treeToString(const Node& node, int depth) const;
 };

@@ -45,7 +45,9 @@ Controller_AI_KevinDill::Controller_AI_KevinDill() : m_behaviorTree(createBehavi
     srand(time(0));
     while (true)
     {
-        std::cout << "Enter a new behavior (type 'quit' to exit): ";
+        std::cout << "Behavior Types : PlaceMobs DeployArchersAnd Swordsman DeployLanePressure DefendCounterAttack DeplyGiantForRogueRetrieval" 
+            << std::endl << "If = Selector And = Sequence" 
+            << std::endl << "Enter a new behavior (type 'quit' to exit): ";
         std::string input;
         std::getline(std::cin, input);
 
@@ -380,8 +382,10 @@ bool Controller_AI_KevinDill::DeployGiantForRogueRetrieval()
     return false;
 }
 
+
 Controller_AI_KevinDill::Node Controller_AI_KevinDill::parseNaturalText(const std::string& behaviorText)
 {
+    // Set up input string stream and other variables needed for processing the text
     std::istringstream iss(behaviorText);
     std::string word;
     Node root(NodeType::Selector);
@@ -389,36 +393,38 @@ Controller_AI_KevinDill::Node Controller_AI_KevinDill::parseNaturalText(const st
     nodeStack.push(&root);
     bool isFirstWord = true;
 
-
+    // Process each word in the input text
     while (iss >> word)
     {
         // Convert the word to lowercase
         std::transform(word.begin(), word.end(), word.begin(), [](unsigned char c) { return std::tolower(c); });
 
+        // Process the first word to set up the root node type
         if (isFirstWord)
         {
             if (word == "if")
             {
                 root.type = NodeType::Selector;
-
             }
             else if (word == "and")
             {
                 root.type = NodeType::Sequence;
-
             }
             else
             {
                 root.type = NodeType::Selector;
             }
-            //nodeStack.push(&root);
+
             isFirstWord = false;
+
+            // Skip processing this word if it's "if" or "and"
             if (word == "if" || word == "and")
             {
                 continue;
             }
         }
-        
+
+        // Process other words to build the behavior tree
         if (word == "if")
         {
             Node selectorNode(NodeType::Selector);
@@ -439,7 +445,7 @@ Controller_AI_KevinDill::Node Controller_AI_KevinDill::parseNaturalText(const st
         }
         else
         {
-            // Check if the word is a substring of any key in the actionMap
+            // Check if the word is a substring of any key in the actionMap and create an action node if it is
             for (const auto& pair : actionMap)
             {
                 if (pair.first.find(word) != std::string::npos)
@@ -453,6 +459,7 @@ Controller_AI_KevinDill::Node Controller_AI_KevinDill::parseNaturalText(const st
         }
     }
 
+    // Return the constructed behavior tree
     return root;
 }
 
@@ -464,9 +471,11 @@ std::string Controller_AI_KevinDill::treeToString(const Node& node, int depth) c
 {
     std::string output;
 
+    // Add indentation according to the depth of the current node in the tree.
     for (int i = 0; i < depth; i++)
         output += "  ";
 
+    // Output the type of the current node.
     switch (node.type)
     {
     case NodeType::Selector:
@@ -478,6 +487,7 @@ std::string Controller_AI_KevinDill::treeToString(const Node& node, int depth) c
     case NodeType::Action:
         output += "Action: ";
 
+        // If the node type is "Action", find the corresponding action name in the actionMap.
         for (const auto& pair : actionMap)
         {
             if (node.action == pair.second)
@@ -491,9 +501,11 @@ std::string Controller_AI_KevinDill::treeToString(const Node& node, int depth) c
         break;
     }
 
+    // Recursively process and output the children of the current node.
     for (const auto& child : node.children)
         output += treeToString(child, depth + 1);
 
+    // Return the string representation of the behavior tree.
     return output;
 }
 
